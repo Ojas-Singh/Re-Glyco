@@ -1,0 +1,1 @@
+temprorary folder for downloaded structure.

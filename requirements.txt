@@ -1,0 +1,7 @@
+numba
+numpy
+scipy
+pandas
+py3Dmol
+stmol==0.0.7
+rdkit

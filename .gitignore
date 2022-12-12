@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.vscode
+output/temp/*.pdb
+data/*.pdb
