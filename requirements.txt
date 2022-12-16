@@ -5,3 +5,4 @@ pandas
 py3Dmol
 stmol==0.0.7
 rdkit
+numpy-quaternion

@@ -48,7 +48,7 @@ if uni_id != "":
             st.write('')
             g = algo.attach(protein,options,glycosylation_locations)
             g1 = pdb.exportPDB('output/out.pdb',pdb.to_normal(g))
-            print(g)
+            # print(g)
             print("ok")
             xyzview1 = py3Dmol.view()
             xyzview1.addModelsAsFrames(g1)
