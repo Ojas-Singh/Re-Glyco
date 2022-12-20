@@ -4,9 +4,11 @@ import numpy as np
 from lib import prep,algo,pdb
 import py3Dmol
 from stmol import showmol
-
+from PIL import Image
 
 st.set_page_config(layout="wide")
+image = Image.open('logo.png')
+st.sidebar.image(image, caption='')
 st.sidebar.title('Re-Glyco')
 uni_id = st.sidebar.text_input(
         "Enter UNIPROT ID of protien...","O15552"
@@ -40,13 +42,13 @@ if uni_id != "":
         expander = st.expander("See glycosylation locations!")
         expander.write(out["glycosylations"])
         glycosylation_locations = out["glycosylations"]
-        options = st.multiselect(
+        options = st.selectbox(
                     'What Glycans to attach?',
-                    ['bisecting','Man3','Man5','Man9'],
-                    ['bisecting'])
+                    ('bisecting', 'man'))
+        attempt = st.number_input('Number of iterations :',min_value=100, max_value=5000, value=500, step=500, format=None)
         if st.button('Process'):
             st.write('')
-            g = algo.attach(protein,options,glycosylation_locations)
+            g = algo.attach(protein,options,glycosylation_locations,int(attempt))
             g1 = pdb.exportPDB('output/out.pdb',pdb.to_normal(g))
             # print(g)
             print("ok")
