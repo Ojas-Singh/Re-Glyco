@@ -3,4 +3,5 @@ __pycache__/
 *$py.class
 .vscode
 output/temp/*.pdb
-data/*.pdb
+data/*.dry.pdb
+.ipynb_checkpoints

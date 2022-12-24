@@ -3,17 +3,21 @@ from numba import njit
 import pandas as pd
 import scipy.stats as st
 import matplotlib.pyplot as plt
+import pdb
 
-def to_DF(pdbddata):
-    df = pd.DataFrame(data=pdbddata)
-    df = df.transpose()
-    df.columns = ['name','X','Y','Z','A','ResName','ResId','Number']
-    return df
 
-@njit()
-def fastest_dihedral(p):
-    b1 = p[2] - p[1]
-    b0, b1, b2 = -(p[1] - p[0]), b1 / np.sqrt((b1 * b1).sum()), p[3] - p[2]
+
+@njit(fastmath=True)
+def fastest_angle(p0,p1,p2):
+    cosine_angle = np.dot(np.subtract(p0,p1),np.subtract(p2,p1)) / (np.linalg.norm(np.subtract(p0,p1)) * np.linalg.norm(np.subtract(p2,p1)))
+    angle = np.arccos(cosine_angle)
+    return np.degrees(angle)
+
+
+@njit(fastmath=True)
+def fastest_dihedral(p0,p1,p2,p3):
+    b1 = p2 - p1
+    b0, b1, b2 = -(p1 - p0), b1 / np.sqrt((b1 * b1).sum()), p3 - p2
     v = b0 - (b0[0] * b1[0] + b0[1] * b1[1] + b0[2] * b1[2]) * b1
     w = b2 - (b2[0] * b1[0] + b2[1] * b1[1] + b2[2] * b1[2]) * b1
     x = v[0] * w[0] + v[1] * w[1] + v[2] * w[2]
@@ -23,7 +27,7 @@ def fastest_dihedral(p):
     return 180 * np.arctan2(y, x) / np.pi
 
 def psiphi(A,B,frames,pdbdata):
-    df= to_DF(pdbdata)
+    df= pdb.to_DF(pdbdata)
     #psi = C1 O Cx' Cx+1'
     #phi = O5 C1 O Cx'
 
@@ -59,7 +63,7 @@ def psiphi(A,B,frames,pdbdata):
 
 def angle(l,frames,pdbdata):
     rf=np.zeros((len(frames),2*len(l)))
-    df= to_DF(pdbdata)
+    df= pdb.to_DF(pdbdata)
     S=[]
     k=0
     for i in l:
