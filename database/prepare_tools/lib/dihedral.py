@@ -26,6 +26,57 @@ def fastest_dihedral(p0,p1,p2,p3):
         (b1[0]*v[1] - b1[1]*v[0]) * w[2]
     return 180 * np.arctan2(y, x) / np.pi
 
+
+def res2input(B,A,C,O,df):
+    # a, b ResId
+    # c is carbon name.
+    s=[]
+    carbon = ""
+    carbonplus = ""
+    oxygen = ""
+    if C == 6 :
+        carbon = "C"+ str(C)
+        carbonplus = "C" + str(C-1)
+        oxygen = "O" + str(O)
+    else:
+        carbon = "C"+ str(C)
+        carbonplus = "C" + str(C+1)
+        oxygen = "O" + str(O)
+    #psi = C1 O Cx' Cx+1'
+    #phi = O5 C1 O Cx'
+
+    # 1-4 aplha
+    a=df.loc[(df['ResId']==A) & (df['Name']== 'C1'),['Number']].iloc[0]['Number'] -1
+    b=df.loc[(df['ResId']==B) & (df['Name']== oxygen),['Number']].iloc[0]['Number'] -1
+    c=df.loc[(df['ResId']==B) & (df['Name']== carbon),['Number']].iloc[0]['Number'] -1
+    d=df.loc[(df['ResId']==B) & (df['Name']== carbonplus),['Number']].iloc[0]['Number'] -1
+
+    e=df.loc[(df['ResId']==A) & (df['Name']== 'O5'),['Number']].iloc[0]['Number'] -1
+    f=df.loc[(df['ResId']==A) & (df['Name']== 'C1'),['Number']].iloc[0]['Number'] -1
+    g=df.loc[(df['ResId']==B) & (df['Name']== oxygen),['Number']].iloc[0]['Number'] -1
+    h=df.loc[(df['ResId']==B) & (df['Name']== carbon),['Number']].iloc[0]['Number'] -1
+
+    return [(A,B),[a,b,c,d],[e,f,g,h]]
+
+def torsions(torsionmeta,pdbdata,frames,f):
+    torsiondata=[]
+    meta=[]
+    for j in torsionmeta:
+        psi=[]
+        phi=[]
+        for i in range(len(frames)):
+            psi.append(fastest_dihedral(frames[i][j[1][0]],frames[i][j[1][1]],frames[i][j[1][2]],frames[i][j[1][3]]))
+            phi.append(fastest_dihedral(frames[i][j[2][0]],frames[i][j[2][1]],frames[i][j[2][2]],frames[i][j[2][3]]))
+        torsiondata.append(psi)
+        meta.append("Res_"+str(j[0][0])+"_"+str(j[0][1])+"_psi")
+        torsiondata.append(phi)
+        meta.append("Res_"+str(j[0][0])+"_"+str(j[0][1])+"_phi")
+    torsiondataDF = pd.DataFrame(data=torsiondata)
+    torsiondataDF = torsiondataDF.transpose()
+    torsiondataDF.columns = meta
+    return torsiondataDF
+
+
 def psiphi(A,B,frames,pdbdata):
     df= pdb.to_DF(pdbdata)
     #psi = C1 O Cx' Cx+1'
@@ -127,7 +178,7 @@ def plot(df,name):
 
     # plt.show()
 
-def kdemax(df,name):
+def kdemax(df):
     col=list(df.columns)
     p=len(col)
     df.iloc[:, 3]

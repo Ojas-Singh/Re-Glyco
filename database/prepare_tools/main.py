@@ -6,11 +6,15 @@ from lib import pdb,graph,dihedral
 
 name="GlycanId"
 f="../../data/prodfull.dry.pdb"
-
-
-
-
 pdbdata, frames = pdb.multi(f)
+pdbdataDF = pdb.to_DF(pdbdata)
+
+tormeta=[[2,3,4,4],[3,4,4,4],[4,5,3,3],[4,7,4,4],[4,8,6,6],[8,9,2,2],[5,6,2,2]]
+torsionmeta = []
+for i in tormeta:
+    torsionmeta.append(dihedral.res2input(i[0],i[1],i[2],i[3],pdbdataDF))
+torsiondataDF= dihedral.torsions(torsionmeta,pdbdata,frames,f)
+torsiondataDF.to_csv('output/'+name+'torsions.csv')
 
 G = np.zeros((len(frames),int(len(pdbdata[0])*(len(pdbdata[0])+1)/2)))
 for i in range(len(frames)):
