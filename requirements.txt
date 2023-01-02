@@ -3,6 +3,5 @@ numpy
 scipy
 pandas
 py3Dmol
+streamlit
 stmol==0.0.7
-rdkit
-numpy-quaternion

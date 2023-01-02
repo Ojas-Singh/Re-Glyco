@@ -4,13 +4,9 @@ import numpy as np
 import pandas as pd
 from lib import pdb 
 import copy
-from numba import njit,jit
+from numba import njit
 import numba as nb
-from numpy import cross, eye, dot
-from scipy.linalg import expm, norm
 import time
-from scipy.spatial import distance
-import numba_scipy
 import streamlit as st
 import math
 
@@ -200,7 +196,7 @@ def rr(phi,psi,OD1,CG,ND2,C1,O5,Garr,Parr):
     return Garr
 
 
-@njit(fastmath=True)
+# @njit(fastmath=True)
 def opt(OD1,CG,ND2,C1,O5,Garr,Parr,attempt):
     phif=0
     psif=0

@@ -7,6 +7,7 @@ trajin prod1.nc
 trajin prod2.nc
 autoimage
 strip :WAT,Cl-,Na+
+strip @H* 
 trajout prodfull.dry.pdb pdb
 ```
 
