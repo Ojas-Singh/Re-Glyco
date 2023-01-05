@@ -6,6 +6,7 @@ import py3Dmol
 from stmol import showmol
 from PIL import Image
 
+
 st.set_page_config(layout="wide")
 image = Image.open('logo.png')
 st.sidebar.image(image, caption='')
@@ -32,7 +33,7 @@ if uni_id != "":
                 mime='text/csv'
             )
         protein = pdb.parse(fold)
-        style = st.sidebar.selectbox('style',['line','cross','stick','sphere','cartoon','clicksphere'])
+        style = st.sidebar.selectbox('style',['cartoon','stick'])
         xyzview = py3Dmol.view()
         xyzview.addModelsAsFrames(system)
         xyzview.setStyle({style:{'color':'spectrum'}})
@@ -45,7 +46,7 @@ if uni_id != "":
         options = st.selectbox(
                     'What Glycans to attach?',
                     ('bisecting', 'man'))
-        attempt = st.number_input('Number of iterations :',min_value=100, max_value=5000, value=500, step=500, format=None)
+        attempt = st.number_input('Number of iterations :',min_value=100, max_value=5000, value=1000, step=500, format=None)
         if st.button('Process'):
             st.write('')
             g = algo.attach(protein,options,glycosylation_locations,int(attempt))
@@ -54,7 +55,18 @@ if uni_id != "":
             print("ok")
             xyzview1 = py3Dmol.view()
             xyzview1.addModelsAsFrames(g1)
-            xyzview1.setStyle({'stick':{'color':'spectrum'}})
+            # import random
+            # colors = {i: "#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(120)}
+            # xyzview1.setStyle({'stick':{'colorscheme':{'prop':'chain','map':colors}}})
+            for n,chain,color in zip(range(len(glycosylation_locations)+1),list("ABCDEFGH"),
+                                        ["lime","cyan","magenta","yellow","salmon","white","blue","orange"]):
+                            if chain=="A":
+                                xyzview1.setStyle({'chain':chain},{'cartoon': {'color':color}})
+                            else:
+                                xyzview1.setStyle({'chain':chain},{'stick': {'color':color}})
+
+
+            # xyzview1.setStyle({'stick':{'color':'spectrum'}})
             xyzview1.setBackgroundColor('#0e1117')
             xyzview1.zoomTo()
             showmol(xyzview1,height=400,width=1100)
