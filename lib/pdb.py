@@ -72,3 +72,24 @@ def exportPDB(fout,pdbdata):
         k=k+line+"\n"
     return k
                 
+def multi(f):
+    frames=[]
+    pdbdata = parse(f)
+    with open(f, 'r') as f:
+            lines = f.readlines()
+            mat = np.zeros((len(pdbdata[0]),3))
+            j=1
+            i=0
+            for line in lines:
+                if line.startswith("ATOM"):
+                    mat[i,0]=float(line[31:38])
+                    mat[i,1]=float(line[39:46])
+                    mat[i,2]=float(line[47:54])
+                    i+=1
+                if line.startswith("ENDMDL"):
+                    j+=1
+                    i=0
+                    frames.append(mat)
+                    mat = np.zeros((len(pdbdata[0]),3))
+
+    return pdbdata,frames

@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from lib import pdb 
 import copy
-from numba import njit
+from numba import njit,jit
 import numba as nb
 import time
 import streamlit as st
@@ -125,121 +125,6 @@ def steric_fast(Garr,Parr):
         r+=1/(i+.001)
     return r
 
-def attach(protein,glycans,glycosylation_locations,attempt):
-    protein_df= pdb.to_DF(protein)
-    Parr=protein_df[['X','Y','Z']].to_numpy(dtype=float)
-    glycoprotein_final = copy.deepcopy(protein_df)
-    gly=[]
-    ChainId= ["B","C","D","E","F","G","H","I"]
-    k=0
-    for i in glycosylation_locations:
-        
-        if not i["description"].startswith('N-linked'):
-            st.write("Only N Glycosylation yet! Spot :",i["begin"]," is ",i["description"])
-            continue
-        target_ResId= int(i["begin"])
-        st.write("Glycosylating Spot :",i["begin"])
-        OD1 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'OD1'),['Number']].iloc[0]['Number'] -1
-        CG = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'CG'),['Number']].iloc[0]['Number'] -1
-        ND2 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'ND2'),['Number']].iloc[0]['Number'] -1
-        G,loaded = sampling(glycans)
-
-        C1 = G.loc[(G['ResId']==2) & (G['Name']== 'C1'),['Number']].iloc[0]['Number'] -1
-        O5 = G.loc[(G['ResId']==2) & (G['Name']== 'O5'),['Number']].iloc[0]['Number'] -1
-        O1 = G.loc[(G['ResId']==1) & (G['Name']== 'O1'),['Number']].iloc[0]['Number'] -1
-        Garr = G[['X','Y','Z']].to_numpy(dtype=float)
-        Garr = Garr-Garr[O1]
-        Garr = Garr + Parr[ND2]
-        axis = np.cross(Parr[CG]-Parr[ND2],Garr[C1]-Parr[ND2])
-        an=fastest_angle(Parr[CG],Parr[ND2],Garr[C1])
-        theta = np.radians(109.5 - an)
-        Garr = Garr - Parr[ND2]
-        M0 = rotation_matrix(axis, theta)
-        for i in range(len(Garr)):
-            Garr[i] = np.dot(M0,Garr[i])
-        Garr = Garr + Parr[ND2]
-        s=time.time()
-        phi,psi =opt(OD1,CG,ND2,C1,O5,Garr,Parr,attempt)
-        print("exec time",time.time()-s)
-        Garr = rr(phi,psi,OD1,CG,ND2,C1,O5,Garr,Parr)
-        print(fastest_dihedral(Parr[OD1],Parr[CG],Parr[ND2],Garr[C1]))
-        print(fastest_dihedral(Parr[CG],Parr[ND2],Garr[C1],Garr[O5]))
-        Gn =  pd.DataFrame(Garr, columns = ['X','Y','Z'])
-        G.update(Gn)
-        G = G.drop([0,1])
-        G["Number"] = glycoprotein_final["Number"].iloc[-1] + G["Number"] 
-        G["Chain"] = ChainId[k]
-        k+=1
-        glycoprotein_final= pd.concat([glycoprotein_final,G])
-        Parr=glycoprotein_final[['X','Y','Z']].to_numpy(dtype=float)
-        
-    return glycoprotein_final
-
-
-def attachwithwiggle(protein,glycans,glycosylation_locations,attempt):
-    protein_df= pdb.to_DF(protein)
-    Parr=protein_df[['X','Y','Z']].to_numpy(dtype=float)
-    glycoprotein_final = copy.deepcopy(protein_df)
-    gly=[]
-    ChainId= ["B","C","D","E","F","G","H","I"]
-    k=0
-    for i in glycosylation_locations:
-        
-        if not i["description"].startswith('N-linked'):
-            st.write("Only N Glycosylation yet! Spot :",i["begin"]," is ",i["description"])
-            continue
-        target_ResId= int(i["begin"])
-        st.write("Glycosylating Spot :",i["begin"])
-        OD1 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'OD1'),['Number']].iloc[0]['Number'] -1
-        CG = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'CG'),['Number']].iloc[0]['Number'] -1
-        ND2 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'ND2'),['Number']].iloc[0]['Number'] -1
-        G,loaded = sampling(glycans)
-
-        C1 = G.loc[(G['ResId']==2) & (G['Name']== 'C1'),['Number']].iloc[0]['Number'] -1
-        O5 = G.loc[(G['ResId']==2) & (G['Name']== 'O5'),['Number']].iloc[0]['Number'] -1
-        O1 = G.loc[(G['ResId']==1) & (G['Name']== 'O1'),['Number']].iloc[0]['Number'] -1
-        Garr = G[['X','Y','Z']].to_numpy(dtype=float)
-        Garr = Garr-Garr[O1]
-        Garr = Garr + Parr[ND2]
-        axis = np.cross(Parr[CG]-Parr[ND2],Garr[C1]-Parr[ND2])
-        an=fastest_angle(Parr[CG],Parr[ND2],Garr[C1])
-        theta = np.radians(109.5 - an)
-        Garr = Garr - Parr[ND2]
-        M0 = rotation_matrix(axis, theta)
-        for i in range(len(Garr)):
-            Garr[i] = np.dot(M0,Garr[i])
-        Garr = Garr + Parr[ND2]
-        s=time.time()
-        phi,psi =opt(OD1,CG,ND2,C1,O5,Garr,Parr,attempt)
-        print("exec time",time.time()-s)
-        Garr = rr(phi,psi,OD1,CG,ND2,C1,O5,Garr,Parr)
-        print(fastest_dihedral(Parr[OD1],Parr[CG],Parr[ND2],Garr[C1]))
-        print(fastest_dihedral(Parr[CG],Parr[ND2],Garr[C1],Garr[O5]))
-        Gn =  pd.DataFrame(Garr, columns = ['X','Y','Z'])
-        G.update(Gn)
-        G = G.drop([0,1])
-        G["Number"] = glycoprotein_final["Number"].iloc[-1] + G["Number"] 
-        G["Chain"] = ChainId[k]
-        k+=1
-        glycoprotein_final= pd.concat([glycoprotein_final,G])
-        Parr=glycoprotein_final[['X','Y','Z']].to_numpy(dtype=float)
-        
-    return glycoprotein_final
-
-
-def sampling(Glycanid):
-    if Glycanid== "bisecting":
-        G = pdb.parse("data/bisecting.pdb")
-        loaded = np.load('data/file.npz',allow_pickle=True)
-    elif Glycanid== "man":
-        G = pdb.parse("data/MAN6.pdb")
-        loaded = np.load('data/file.npz',allow_pickle=True)
-    return pdb.to_DF(G),loaded
-
-
-# def resample(f):
-
-
 
 
 @njit(fastmath=True)
@@ -259,20 +144,12 @@ def rr(phi,psi,OD1,CG,ND2,C1,O5,Garr,Parr):
     return Garr
 
 
-# @njit(fastmath=True)
-def opt(OD1,CG,ND2,C1,O5,Garr,Parr,attempt):
+@njit(fastmath=True)
+def opt(OD1,CG,ND2,C1,O5,Garr,Parr):
     phif=0
     psif=0
     r=100000000
-    # for phi in range(-180,180,10):
-    #     for psi in range(-180,180,10):
-    #         Garr = rr(phi,psi,OD1,CG,ND2,C1,O5,Garr,Parr)
-    #         ri= steric_fast(Garr,Parr)
-    #         if ri<r:
-    #             phif= phi
-    #             psif= psi
-    #             r=ri
-    for pp in range(attempt):
+    for pp in range(1000):
         phi = random.uniform(-180, 180)
         psi = random.uniform(-180, 180)
         Garr = rr(phi,psi,OD1,CG,ND2,C1,O5,Garr,Parr)
@@ -283,3 +160,144 @@ def opt(OD1,CG,ND2,C1,O5,Garr,Parr,attempt):
             psif= psi
             r=ri
     return phif,psif
+
+
+def attach(protein,glycans,glycosylation_locations):
+    protein_df= pdb.to_DF(protein)
+    Parr=protein_df[['X','Y','Z']].to_numpy(dtype=float)
+    glycoprotein_final = copy.deepcopy(protein_df)
+    gly=[]
+    ChainId= ["B","C","D","E","F","G","H","I"]
+    k=0
+    for i in glycosylation_locations:
+        
+        if not i["description"].startswith('N-linked'):
+            st.write("Only N Glycosylation yet! Spot :",i["begin"]," is ",i["description"])
+            continue
+        target_ResId= int(i["begin"])
+        st.write("Glycosylating Spot :",i["begin"])
+        OD1 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'OD1'),['Number']].iloc[0]['Number'] -1
+        CG = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'CG'),['Number']].iloc[0]['Number'] -1
+        ND2 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'ND2'),['Number']].iloc[0]['Number'] -1
+        G,loaded = sampling(glycans)
+
+        C1 = G.loc[(G['ResId']==2) & (G['Name']== 'C1'),['Number']].iloc[0]['Number'] -1
+        O5 = G.loc[(G['ResId']==2) & (G['Name']== 'O5'),['Number']].iloc[0]['Number'] -1
+        O1 = G.loc[(G['ResId']==1) & (G['Name']== 'O1'),['Number']].iloc[0]['Number'] -1
+        Garr = G[['X','Y','Z']].to_numpy(dtype=float)
+        Garr = Garr-Garr[O1]
+        Garr = Garr + Parr[ND2]
+        axis = np.cross(Parr[CG]-Parr[ND2],Garr[C1]-Parr[ND2])
+        an=fastest_angle(Parr[CG],Parr[ND2],Garr[C1])
+        theta = np.radians(109.5 - an)
+        Garr = Garr - Parr[ND2]
+        M0 = rotation_matrix(axis, theta)
+        for i in range(len(Garr)):
+            Garr[i] = np.dot(M0,Garr[i])
+        Garr = Garr + Parr[ND2]
+        s=time.time()
+        phi,psi =opt(OD1,CG,ND2,C1,O5,Garr,Parr)
+        print("exec time",time.time()-s)
+        Garr = rr(phi,psi,OD1,CG,ND2,C1,O5,Garr,Parr)
+        print(fastest_dihedral(Parr[OD1],Parr[CG],Parr[ND2],Garr[C1]))
+        print(fastest_dihedral(Parr[CG],Parr[ND2],Garr[C1],Garr[O5]))
+        Gn =  pd.DataFrame(Garr, columns = ['X','Y','Z'])
+        G.update(Gn)
+        G = G.drop([0,1])
+        G["Number"] = glycoprotein_final["Number"].iloc[-1] + G["Number"] 
+        G["Chain"] = ChainId[k]
+        k+=1
+        glycoprotein_final= pd.concat([glycoprotein_final,G])
+        Parr=glycoprotein_final[['X','Y','Z']].to_numpy(dtype=float)
+        
+    return glycoprotein_final
+
+
+def sampling(Glycanid):
+    if Glycanid== "bisecting":
+        G = pdb.parse("data/bisecting.pdb")
+        loaded = np.load('data/bisecting.npz',allow_pickle=True)
+    elif Glycanid== "man":
+        G = pdb.parse("data/MAN6.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    return pdb.to_DF(G),loaded
+
+
+
+def attachwithwiggle(protein,glycans,glycosylation_locations):
+    protein_df= pdb.to_DF(protein)
+    Parr=protein_df[['X','Y','Z']].to_numpy(dtype=float)
+    glycoprotein_final = copy.deepcopy(protein_df)
+    gly=[]
+    ChainId= ["B","C","D","E","F","G","H","I"]
+    k=0
+    for i in glycosylation_locations:
+        
+        if not i["description"].startswith('N-linked'):
+            st.write("Only N Glycosylation yet! Spot :",i["begin"]," is ",i["description"])
+            continue
+        target_ResId= int(i["begin"])
+        st.write("Glycosylating Spot :",i["begin"])
+        OD1 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'OD1'),['Number']].iloc[0]['Number'] -1
+        CG = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'CG'),['Number']].iloc[0]['Number'] -1
+        ND2 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'ND2'),['Number']].iloc[0]['Number'] -1
+        G,loaded = sampling(glycans)
+
+        C1 = G.loc[(G['ResId']==2) & (G['Name']== 'C1'),['Number']].iloc[0]['Number'] -1
+        O5 = G.loc[(G['ResId']==2) & (G['Name']== 'O5'),['Number']].iloc[0]['Number'] -1
+        O1 = G.loc[(G['ResId']==1) & (G['Name']== 'O1'),['Number']].iloc[0]['Number'] -1
+        s=time.time()
+        Garr = G[['X','Y','Z']].to_numpy(dtype=float)
+        tormeta = loaded["b"]
+        torsions = loaded["c"]
+        torsionpoints = loaded["d"]
+        torsionparts  = loaded["f"]
+        torsionparts = np.asarray(torsionparts)
+        torsionpoints= np.asarray(torsionpoints)
+        Garr = Garrfromtorsion(Garr,torsionpoints,torsions,torsionparts)
+        Garr = optwithwiggle(Garr,O1,OD1,CG,ND2,C1,O5,Parr)
+
+        Gn =  pd.DataFrame(Garr, columns = ['X','Y','Z'])
+        G.update(Gn)
+        G = G.drop([0,1])
+        G["Number"] = glycoprotein_final["Number"].iloc[-1] + G["Number"] 
+        G["Chain"] = ChainId[k]
+        k+=1
+        glycoprotein_final= pd.concat([glycoprotein_final,G])
+        Parr=glycoprotein_final[['X','Y','Z']].to_numpy(dtype=float)
+        print("exec time",time.time()-s)
+        
+    return glycoprotein_final
+
+
+@njit(fastmath=True)
+def optwithwiggle(Garr,O1,OD1,CG,ND2,C1,O5,Parr):
+        
+
+        Garr = Garr-Garr[O1]
+        Garr = Garr + Parr[ND2]
+        axis = np.cross(Parr[CG]-Parr[ND2],Garr[C1]-Parr[ND2])
+        an=fastest_angle(Parr[CG],Parr[ND2],Garr[C1])
+        theta = np.radians(109.5 - an)
+        Garr = Garr - Parr[ND2]
+        M0 = rotation_matrix(axis, theta)
+        for i in range(len(Garr)):
+            Garr[i] = np.dot(M0,Garr[i])
+        Garr = Garr + Parr[ND2]
+        phi,psi =opt(OD1,CG,ND2,C1,O5,Garr,Parr)
+        Garr = rr(phi,psi,OD1,CG,ND2,C1,O5,Garr,Parr)
+        return Garr
+
+@njit(fastmath=True)
+def Garrfromtorsion(Garr,torsionpoints,torsions,torsionparts):
+    randomidx = random.randint(0,len(torsions)-1)
+    torsion = torsions[randomidx]
+    for i in range(len(torsionpoints)):
+            M1 = rotation_matrix(Garr[torsionpoints[i][2]]-Garr[torsionpoints[i][1]],np.radians(torsion[i]-fastest_dihedral(Garr[torsionpoints[i][0]],Garr[torsionpoints[i][1]],Garr[torsionpoints[i][2]],Garr[torsionpoints[i][3]])))
+            Garr = Garr-Garr[torsionpoints[i][1]]
+            # for j in torsionparts[i][1]:
+            for j in np.where(torsionparts[i])[0]:
+                Garr[j] = np.dot(M1,Garr[j])
+            Garr = Garr+Garr[torsionpoints[i][1]]
+    return Garr
+

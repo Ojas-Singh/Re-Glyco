@@ -46,10 +46,41 @@ if uni_id != "":
         options = st.selectbox(
                     'What Glycans to attach?',
                     ('bisecting', 'man'))
-        attempt = st.number_input('Number of iterations :',min_value=100, max_value=5000, value=1000, step=500, format=None)
-        if st.button('Process'):
+        # attempt = st.number_input('Number of iterations :',min_value=100, max_value=50000, value=1000, step=500, format=None)
+        if st.button('Process without wiggle'):
             st.write('')
-            g = algo.attach(protein,options,glycosylation_locations,int(attempt))
+            g = algo.attach(protein,options,glycosylation_locations)
+            g1 = pdb.exportPDB('output/out.pdb',pdb.to_normal(g))
+            # print(g)
+            print("ok")
+            xyzview1 = py3Dmol.view()
+            xyzview1.addModelsAsFrames(g1)
+            # import random
+            # colors = {i: "#"+''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(120)}
+            # xyzview1.setStyle({'stick':{'colorscheme':{'prop':'chain','map':colors}}})
+            for n,chain,color in zip(range(len(glycosylation_locations)+1),list("ABCDEFGH"),
+                                        ["lime","cyan","magenta","yellow","salmon","white","blue","orange"]):
+                            if chain=="A":
+                                xyzview1.setStyle({'chain':chain},{'cartoon': {'color':color}})
+                            else:
+                                xyzview1.setStyle({'chain':chain},{'stick': {'color':color}})
+
+
+            # xyzview1.setStyle({'stick':{'color':'spectrum'}})
+            xyzview1.setBackgroundColor('#0e1117')
+            xyzview1.zoomTo()
+            showmol(xyzview1,height=400,width=1100)
+            with open('output/out.pdb') as ofile:
+                system = "".join([x for x in ofile])
+                btn = st.download_button(
+                    label="Download Re-Glyco Structure",
+                    data=system,
+                    file_name=uni_id+"_glycosylated.pdb",
+                    mime='text/csv'
+                )
+        elif st.button('Process with wiggle'):
+            st.write('')
+            g = algo.attachwithwiggle(protein,options,glycosylation_locations)
             g1 = pdb.exportPDB('output/out.pdb',pdb.to_normal(g))
             # print(g)
             print("ok")
@@ -84,5 +115,5 @@ if uni_id != "":
         
 
 else:
-    print("Enter UniProtID to procede!")
+    print("Enter UniProtID to proceed!")
 
