@@ -1,3 +1,6 @@
+# gly
+# https://glytoucan.org/Structures/Glycans/G13560FL
+
 ATOM      1  HO1 ROH     1       9.098   5.417  -1.056  1.00  0.00           H  
 ATOM      2  O1  ROH     1       9.335   6.205  -1.551  1.00  0.00           O  
 ATOM      3  C1  4YA     2      10.627   5.927  -2.076  1.00  0.00           C  
