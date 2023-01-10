@@ -290,10 +290,12 @@ def optwithwiggle(Garr,O1,OD1,CG,ND2,C1,O5,Parr):
 
 @njit(fastmath=True)
 def Garrfromtorsion(Garr,torsionpoints,torsions,torsionparts):
-    randomidx = random.randint(0,len(torsions)-1)
-    torsion = torsions[randomidx]
+    # randomidx = random.randint(0,len(torsions)-1)
+    # torsion = torsions[randomidx]
     for i in range(len(torsionpoints)):
-            M1 = rotation_matrix(Garr[torsionpoints[i][2]]-Garr[torsionpoints[i][1]],np.radians(torsion[i]-fastest_dihedral(Garr[torsionpoints[i][0]],Garr[torsionpoints[i][1]],Garr[torsionpoints[i][2]],Garr[torsionpoints[i][3]])))
+            # M1 = rotation_matrix(Garr[torsionpoints[i][2]]-Garr[torsionpoints[i][1]],np.radians(torsion[i]-fastest_dihedral(Garr[torsionpoints[i][0]],Garr[torsionpoints[i][1]],Garr[torsionpoints[i][2]],Garr[torsionpoints[i][3]])))
+            M1 = rotation_matrix(Garr[torsionpoints[i][2]]-Garr[torsionpoints[i][1]],np.radians(random.uniform(-10, 10)))
+
             Garr = Garr-Garr[torsionpoints[i][1]]
             # for j in torsionparts[i][1]:
             for j in np.where(torsionparts[i])[0]:
