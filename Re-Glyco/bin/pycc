@@ -1,0 +1,3 @@
+#!/home/owley/reglyco/Re-Glyco/Re-Glyco/bin/python
+from numba.pycc import main
+main()

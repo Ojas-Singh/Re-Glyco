@@ -45,7 +45,7 @@ if uni_id != "":
         glycosylation_locations = out["glycosylations"]
         options = st.selectbox(
                     'What Glycans to attach?',
-                    ('bisecting', 'man'))
+                    ('bisecting', 'a2',"a2g2","a3g3","m5","m6_1","m6_2","m6_3","m7_1","m7_2","m7_3","m7_4","m8_1","m8_2","m8_3","m9"))
         attempt = st.number_input('Number of iterations :',min_value=100, max_value=5000, value=1000, step=500, format=None)
         if st.button('Process'):
             st.write('')

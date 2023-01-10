@@ -231,8 +231,50 @@ def sampling(Glycanid):
     if Glycanid== "bisecting":
         G = pdb.parse("data/bisecting.pdb")
         loaded = np.load('data/file.npz',allow_pickle=True)
-    elif Glycanid== "man":
-        G = pdb.parse("data/MAN6.pdb")
+    elif Glycanid== "a2":
+        G = pdb.parse("data/Complex/a2/Cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "a2g2":
+        G = pdb.parse("data/Complex/a2g2/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True) 
+    elif Glycanid== "a3g3":
+        G = pdb.parse("data/Complex/a3g3/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m5":
+        G = pdb.parse("data/Oligomannose/man5/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m6_1":
+        G = pdb.parse("data/Oligomannose/man6_1/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m6_2":
+        G = pdb.parse("data/Oligomannose/man6_2/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m6_3":
+        G = pdb.parse("data/Oligomannose/man6_3/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m7_1":
+        G = pdb.parse("data/Oligomannose/man7_1/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m7_2":
+        G = pdb.parse("data/Oligomannose/man7_2/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m7_3":
+        G = pdb.parse("data/Oligomannose/man7_3/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m7_4":
+        G = pdb.parse("data/Oligomannose/man7_4/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m8_1":
+        G = pdb.parse("data/Oligomannose/man8_1/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m8_2":
+        G = pdb.parse("data/Oligomannose/man8_2/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m8_3":
+        G = pdb.parse("data/Oligomannose/man8_3/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m9":
+        G = pdb.parse("data/Oligomannose/man9/cluster1.pdb")
         loaded = np.load('data/file.npz',allow_pickle=True)
     return pdb.to_DF(G),loaded
 
