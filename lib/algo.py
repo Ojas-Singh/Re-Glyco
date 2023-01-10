@@ -270,9 +270,67 @@ def attachwithwiggle(protein,glycans,glycosylation_locations):
     return glycoprotein_final
 
 
+<<<<<<< HEAD
+def sampling(Glycanid):
+    if Glycanid== "bisecting":
+        G = pdb.parse("data/bisecting.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "a2":
+        G = pdb.parse("data/Complex/a2/Cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "a2g2":
+        G = pdb.parse("data/Complex/a2g2/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True) 
+    elif Glycanid== "a3g3":
+        G = pdb.parse("data/Complex/a3g3/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m5":
+        G = pdb.parse("data/Oligomannose/man5/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m6_1":
+        G = pdb.parse("data/Oligomannose/man6_1/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m6_2":
+        G = pdb.parse("data/Oligomannose/man6_2/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m6_3":
+        G = pdb.parse("data/Oligomannose/man6_3/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m7_1":
+        G = pdb.parse("data/Oligomannose/man7_1/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m7_2":
+        G = pdb.parse("data/Oligomannose/man7_2/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m7_3":
+        G = pdb.parse("data/Oligomannose/man7_3/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m7_4":
+        G = pdb.parse("data/Oligomannose/man7_4/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m8_1":
+        G = pdb.parse("data/Oligomannose/man8_1/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m8_2":
+        G = pdb.parse("data/Oligomannose/man8_2/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m8_3":
+        G = pdb.parse("data/Oligomannose/man8_3/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    elif Glycanid== "m9":
+        G = pdb.parse("data/Oligomannose/man9/cluster1.pdb")
+        loaded = np.load('data/file.npz',allow_pickle=True)
+    return pdb.to_DF(G),loaded
+
+
+# def resample(f):
+
+
+=======
 @njit(fastmath=True)
 def optwithwiggle(Garr,O1,OD1,CG,ND2,C1,O5,Parr):
         
+>>>>>>> 0da8f9d1bd5599e1c63f9b0b51c4ae01c8f606a8
 
         Garr = Garr-Garr[O1]
         Garr = Garr + Parr[ND2]
@@ -303,3 +361,31 @@ def Garrfromtorsion(Garr,torsionpoints,torsions,torsionparts):
             Garr = Garr+Garr[torsionpoints[i][1]]
     return Garr
 
+<<<<<<< HEAD
+
+# @njit(fastmath=True)
+def opt(OD1,CG,ND2,C1,O5,Garr,Parr,attempt):
+    phif=0
+    psif=0
+    r=100000000
+    # for phi in range(-180,180,10):
+    #     for psi in range(-180,180,10):
+    #         Garr = rr(phi,psi,OD1,CG,ND2,C1,O5,Garr,Parr)
+    #         ri= steric_fast(Garr,Parr)
+    #         if ri<r:
+    #             phif= phi
+    #             psif= psi
+    #             r=ri
+    for pp in range(attempt):
+        phi = random.uniform(-180, 180)
+        psi = random.uniform(-180, 180)
+        Garr = rr(phi,psi,OD1,CG,ND2,C1,O5,Garr,Parr)
+        ri= steric_fast(Garr,Parr)
+        # print(pp,ri)
+        if ri<r:
+            phif= phi
+            psif= psi
+            r=ri
+    return phif,psif
+=======
+>>>>>>> 0da8f9d1bd5599e1c63f9b0b51c4ae01c8f606a8
