@@ -217,64 +217,6 @@ def sampling(Glycanid):
     if Glycanid== "bisecting":
         G = pdb.parse("data/bisecting.pdb")
         loaded = np.load('data/bisecting.npz',allow_pickle=True)
-    elif Glycanid== "man":
-        G = pdb.parse("data/MAN6.pdb")
-        loaded = np.load('data/file.npz',allow_pickle=True)
-    return pdb.to_DF(G),loaded
-
-
-
-def attachwithwiggle(protein,glycans,glycosylation_locations):
-    protein_df= pdb.to_DF(protein)
-    Parr=protein_df[['X','Y','Z']].to_numpy(dtype=float)
-    glycoprotein_final = copy.deepcopy(protein_df)
-    gly=[]
-    ChainId= ["B","C","D","E","F","G","H","I"]
-    k=0
-    for i in glycosylation_locations:
-        
-        if not i["description"].startswith('N-linked'):
-            st.write("Only N Glycosylation yet! Spot :",i["begin"]," is ",i["description"])
-            continue
-        target_ResId= int(i["begin"])
-        st.write("Glycosylating Spot :",i["begin"])
-        OD1 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'OD1'),['Number']].iloc[0]['Number'] -1
-        CG = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'CG'),['Number']].iloc[0]['Number'] -1
-        ND2 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'ND2'),['Number']].iloc[0]['Number'] -1
-        G,loaded = sampling(glycans)
-
-        C1 = G.loc[(G['ResId']==2) & (G['Name']== 'C1'),['Number']].iloc[0]['Number'] -1
-        O5 = G.loc[(G['ResId']==2) & (G['Name']== 'O5'),['Number']].iloc[0]['Number'] -1
-        O1 = G.loc[(G['ResId']==1) & (G['Name']== 'O1'),['Number']].iloc[0]['Number'] -1
-        s=time.time()
-        Garr = G[['X','Y','Z']].to_numpy(dtype=float)
-        tormeta = loaded["b"]
-        torsions = loaded["c"]
-        torsionpoints = loaded["d"]
-        torsionparts  = loaded["f"]
-        torsionparts = np.asarray(torsionparts)
-        torsionpoints= np.asarray(torsionpoints)
-        Garr = Garrfromtorsion(Garr,torsionpoints,torsions,torsionparts)
-        Garr = optwithwiggle(Garr,O1,OD1,CG,ND2,C1,O5,Parr)
-
-        Gn =  pd.DataFrame(Garr, columns = ['X','Y','Z'])
-        G.update(Gn)
-        G = G.drop([0,1])
-        G["Number"] = glycoprotein_final["Number"].iloc[-1] + G["Number"] 
-        G["Chain"] = ChainId[k]
-        k+=1
-        glycoprotein_final= pd.concat([glycoprotein_final,G])
-        Parr=glycoprotein_final[['X','Y','Z']].to_numpy(dtype=float)
-        print("exec time",time.time()-s)
-        
-    return glycoprotein_final
-
-
-<<<<<<< HEAD
-def sampling(Glycanid):
-    if Glycanid== "bisecting":
-        G = pdb.parse("data/bisecting.pdb")
-        loaded = np.load('data/file.npz',allow_pickle=True)
     elif Glycanid== "a2":
         G = pdb.parse("data/Complex/a2/Cluster1.pdb")
         loaded = np.load('data/file.npz',allow_pickle=True)
@@ -323,14 +265,55 @@ def sampling(Glycanid):
     return pdb.to_DF(G),loaded
 
 
-# def resample(f):
+def attachwithwiggle(protein,glycans,glycosylation_locations):
+    protein_df= pdb.to_DF(protein)
+    Parr=protein_df[['X','Y','Z']].to_numpy(dtype=float)
+    glycoprotein_final = copy.deepcopy(protein_df)
+    gly=[]
+    ChainId= ["B","C","D","E","F","G","H","I"]
+    k=0
+    for i in glycosylation_locations:
+        
+        if not i["description"].startswith('N-linked'):
+            st.write("Only N Glycosylation yet! Spot :",i["begin"]," is ",i["description"])
+            continue
+        target_ResId= int(i["begin"])
+        st.write("Glycosylating Spot :",i["begin"])
+        OD1 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'OD1'),['Number']].iloc[0]['Number'] -1
+        CG = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'CG'),['Number']].iloc[0]['Number'] -1
+        ND2 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'ND2'),['Number']].iloc[0]['Number'] -1
+        G,loaded = sampling(glycans)
+
+        C1 = G.loc[(G['ResId']==2) & (G['Name']== 'C1'),['Number']].iloc[0]['Number'] -1
+        O5 = G.loc[(G['ResId']==2) & (G['Name']== 'O5'),['Number']].iloc[0]['Number'] -1
+        O1 = G.loc[(G['ResId']==1) & (G['Name']== 'O1'),['Number']].iloc[0]['Number'] -1
+        s=time.time()
+        Garr = G[['X','Y','Z']].to_numpy(dtype=float)
+        tormeta = loaded["b"]
+        torsions = loaded["c"]
+        torsionpoints = loaded["d"]
+        torsionparts  = loaded["f"]
+        torsionparts = np.asarray(torsionparts)
+        torsionpoints= np.asarray(torsionpoints)
+        Garr = Garrfromtorsion(Garr,torsionpoints,torsions,torsionparts)
+        Garr = optwithwiggle(Garr,O1,OD1,CG,ND2,C1,O5,Parr)
+
+        Gn =  pd.DataFrame(Garr, columns = ['X','Y','Z'])
+        G.update(Gn)
+        G = G.drop([0,1])
+        G["Number"] = glycoprotein_final["Number"].iloc[-1] + G["Number"] 
+        G["Chain"] = ChainId[k]
+        k+=1
+        glycoprotein_final= pd.concat([glycoprotein_final,G])
+        Parr=glycoprotein_final[['X','Y','Z']].to_numpy(dtype=float)
+        print("exec time",time.time()-s)
+        
+    return glycoprotein_final
 
 
-=======
 @njit(fastmath=True)
 def optwithwiggle(Garr,O1,OD1,CG,ND2,C1,O5,Parr):
         
->>>>>>> 0da8f9d1bd5599e1c63f9b0b51c4ae01c8f606a8
 
         Garr = Garr-Garr[O1]
         Garr = Garr + Parr[ND2]
@@ -361,31 +344,3 @@ def Garrfromtorsion(Garr,torsionpoints,torsions,torsionparts):
             Garr = Garr+Garr[torsionpoints[i][1]]
     return Garr
 
-<<<<<<< HEAD
-
-# @njit(fastmath=True)
-def opt(OD1,CG,ND2,C1,O5,Garr,Parr,attempt):
-    phif=0
-    psif=0
-    r=100000000
-    # for phi in range(-180,180,10):
-    #     for psi in range(-180,180,10):
-    #         Garr = rr(phi,psi,OD1,CG,ND2,C1,O5,Garr,Parr)
-    #         ri= steric_fast(Garr,Parr)
-    #         if ri<r:
-    #             phif= phi
-    #             psif= psi
-    #             r=ri
-    for pp in range(attempt):
-        phi = random.uniform(-180, 180)
-        psi = random.uniform(-180, 180)
-        Garr = rr(phi,psi,OD1,CG,ND2,C1,O5,Garr,Parr)
-        ri= steric_fast(Garr,Parr)
-        # print(pp,ri)
-        if ri<r:
-            phif= phi
-            psif= psi
-            r=ri
-    return phif,psif
-=======
->>>>>>> 0da8f9d1bd5599e1c63f9b0b51c4ae01c8f606a8
