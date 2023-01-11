@@ -4,19 +4,20 @@ from sklearn.decomposition import PCA
 from lib import pdb,graph,dihedral
 
 
-name="bisecting"
-f="data/prodfull.dry.pdb"
+name="A3G3S1-F3"
+f="data/A.dry.pdb"
 pdbdata, frames = pdb.multi(f)
 pdbdataDF = pdb.to_DF(pdbdata)
 
 
 
-tormeta=[[2,3,4,4],[3,4,4,4],[4,5,3,3],[4,7,4,4],[4,8,6,6],[8,9,2,2],[5,6,2,2]]
+# tormeta=[[2,3,4,4],[3,4,4,4],[4,5,3,3],[4,7,4,4],[4,8,6,6],[8,9,2,2],[5,6,2,2]]
+tormeta=[[2,3,4,4],[3,4,4,4],[4,5,3,3],[4,8,6,6],[8,9,2,2],[5,6,2,2],[6,7,4,4],[8,9,2,2],[9,10,4,4],[8,11,6,6],[11,12,4,4],[11,14,3,3]]
 torsionmeta = []
 for i in tormeta:
     torsionmeta.append(dihedral.res2input(i[0],i[1],i[2],i[3],pdbdataDF))
 
-
+print(torsionmeta)
 adata = np.asanyarray(pdbdataDF,dtype=object)
 bdata = np.asanyarray(torsionmeta,dtype=object)
 torsiondataDF= dihedral.torsions(torsionmeta,pdbdata,frames,f)
@@ -26,13 +27,13 @@ torsiondataDF.to_csv('output/'+name+'torsions.csv')
 
 import networkx as nx
 connect =[]
-f2 = "data/bi.txt"
+f2 = "data/a3.txt"
 with open(f2, 'r') as f:
             lines = f.readlines()
             i=1
             for line in lines:
-                a = int((line[8:12]).strip(" "))
-                b = int((line[13:17]).strip(" "))
+                a = int((line[8:13]).strip(" "))
+                b = int((line[13:19]).strip(" "))
                 connect.append((a,b))
 
 anotherlist=[]

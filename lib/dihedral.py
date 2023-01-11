@@ -69,7 +69,7 @@ def res2input(B,A,C,O,df):
         b=df.loc[(df['ResId']==B) & (df['Name']== oxygen),['Number']].iloc[0]['Number'] -1
         c=df.loc[(df['ResId']==B) & (df['Name']== carbon),['Number']].iloc[0]['Number'] -1
         d=df.loc[(df['ResId']==B) & (df['Name']== carbonplus),['Number']].iloc[0]['Number'] -1
-
+        
         e=df.loc[(df['ResId']==A) & (df['Name']== 'O5'),['Number']].iloc[0]['Number'] -1
         f=df.loc[(df['ResId']==A) & (df['Name']== 'C1'),['Number']].iloc[0]['Number'] -1
         g=df.loc[(df['ResId']==B) & (df['Name']== oxygen),['Number']].iloc[0]['Number'] -1

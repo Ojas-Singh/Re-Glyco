@@ -169,17 +169,16 @@ def attach(protein,glycans,glycosylation_locations):
     gly=[]
     ChainId= ["B","C","D","E","F","G","H","I"]
     k=0
-    for i in glycosylation_locations:
-        
-        if not i["description"].startswith('N-linked'):
-            st.write("Only N Glycosylation yet! Spot :",i["begin"]," is ",i["description"])
+    for i in range(len(glycosylation_locations)):
+        if not glycosylation_locations[i]["description"].startswith('N-linked'):
+            st.write("Only N Glycosylation yet! Spot :",glycosylation_locations[i]["begin"]," is ",glycosylation_locations[i]["description"])
             continue
-        target_ResId= int(i["begin"])
-        st.write("Glycosylating Spot :",i["begin"])
+        target_ResId= int(glycosylation_locations[i]["begin"])
+        # st.write("Glycosylating Spot :",glycosylation_locations[i]["begin"])
         OD1 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'OD1'),['Number']].iloc[0]['Number'] -1
         CG = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'CG'),['Number']].iloc[0]['Number'] -1
         ND2 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'ND2'),['Number']].iloc[0]['Number'] -1
-        G,loaded = sampling(glycans)
+        G,loaded = sampling(glycans[i])
 
         C1 = G.loc[(G['ResId']==2) & (G['Name']== 'C1'),['Number']].iloc[0]['Number'] -1
         O5 = G.loc[(G['ResId']==2) & (G['Name']== 'O5'),['Number']].iloc[0]['Number'] -1
@@ -217,6 +216,9 @@ def sampling(Glycanid):
     if Glycanid== "bisecting":
         G = pdb.parse("data/bisecting.pdb")
         loaded = np.load('data/bisecting.npz',allow_pickle=True)
+    elif Glycanid== "A3G3S1-F3":
+        G = pdb.parse("data/A3G3S1-F3.pdb")
+        loaded = np.load('data/A3G3S1-F3.npz',allow_pickle=True)
     elif Glycanid== "a2":
         G = pdb.parse("data/Complex/a2/Cluster1.pdb")
         loaded = np.load('data/file.npz',allow_pickle=True)
@@ -272,17 +274,16 @@ def attachwithwiggle(protein,glycans,glycosylation_locations):
     gly=[]
     ChainId= ["B","C","D","E","F","G","H","I"]
     k=0
-    for i in glycosylation_locations:
-        
-        if not i["description"].startswith('N-linked'):
-            st.write("Only N Glycosylation yet! Spot :",i["begin"]," is ",i["description"])
+    for i in range(len(glycosylation_locations)):
+        if not glycosylation_locations[i]["description"].startswith('N-linked'):
+            st.write("Only N Glycosylation yet! Spot :",glycosylation_locations[i]["begin"]," is ",glycosylation_locations[i]["description"])
             continue
-        target_ResId= int(i["begin"])
-        st.write("Glycosylating Spot :",i["begin"])
+        target_ResId= int(glycosylation_locations[i]["begin"])
+        # st.write("Glycosylating Spot :",i["begin"])
         OD1 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'OD1'),['Number']].iloc[0]['Number'] -1
         CG = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'CG'),['Number']].iloc[0]['Number'] -1
         ND2 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'ND2'),['Number']].iloc[0]['Number'] -1
-        G,loaded = sampling(glycans)
+        G,loaded = sampling(glycans[i])
 
         C1 = G.loc[(G['ResId']==2) & (G['Name']== 'C1'),['Number']].iloc[0]['Number'] -1
         O5 = G.loc[(G['ResId']==2) & (G['Name']== 'O5'),['Number']].iloc[0]['Number'] -1

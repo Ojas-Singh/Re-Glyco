@@ -43,13 +43,21 @@ if uni_id != "":
         expander = st.expander("See glycosylation locations!")
         expander.write(out["glycosylations"])
         glycosylation_locations = out["glycosylations"]
-        options = st.selectbox(
-                    'What Glycans to attach?',
-                    ('bisecting', 'a2',"a2g2","a3g3","m5","m6_1","m6_2","m6_3","m7_1","m7_2","m7_3","m7_4","m8_1","m8_2","m8_3","m9"))
+        glycans=[1 for x in range(len(glycosylation_locations))]
+        for i in range(len(glycosylation_locations)):
+            options = st.selectbox(
+                        'What Glycans to attach? on spot '+str(glycosylation_locations[i]["begin"]) ,
+                        ('bisecting','A3G3S1-F3', 'a2',"a2g2","a3g3","m5","m6_1","m6_2","m6_3","m7_1","m7_2","m7_3","m7_4","m8_1","m8_2","m8_3","m9"),key=str(i))
+            # 
+            if options=='A3G3S1-F3':
+                picture = Image.open('data/'+options+'.png')
+                st.image(picture, caption='',width=300)
+            glycans[i]=options
+        print(glycans)
         # attempt = st.number_input('Number of iterations :',min_value=100, max_value=50000, value=1000, step=500, format=None)
         if st.button('Process without wiggle'):
             st.write('')
-            g = algo.attach(protein,options,glycosylation_locations)
+            g = algo.attach(protein,glycans,glycosylation_locations)
             g1 = pdb.exportPDB('output/out.pdb',pdb.to_normal(g))
             # print(g)
             print("ok")
@@ -80,7 +88,7 @@ if uni_id != "":
                 )
         elif st.button('Process with wiggle'):
             st.write('')
-            g = algo.attachwithwiggle(protein,options,glycosylation_locations)
+            g = algo.attachwithwiggle(protein,glycans,glycosylation_locations)
             g1 = pdb.exportPDB('output/out.pdb',pdb.to_normal(g))
             # print(g)
             print("ok")
