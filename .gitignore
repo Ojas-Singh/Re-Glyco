@@ -5,5 +5,4 @@ __pycache__/
 output/temp/*.pdb
 data/*.dry.pdb
 .ipynb_checkpoints
-*.png
 output/out.pdb
