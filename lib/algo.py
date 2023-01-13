@@ -194,9 +194,7 @@ def attach(protein,glycans,glycosylation_locations):
         for i in range(len(Garr)):
             Garr[i] = np.dot(M0,Garr[i])
         Garr = Garr + Parr[ND2]
-        s=time.time()
         phi,psi =opt(OD1,CG,ND2,C1,O5,Garr,Parr)
-        print("exec time",time.time()-s)
         Garr = rr(phi,psi,OD1,CG,ND2,C1,O5,Garr,Parr)
         print(fastest_dihedral(Parr[OD1],Parr[CG],Parr[ND2],Garr[C1]))
         print(fastest_dihedral(Parr[CG],Parr[ND2],Garr[C1],Garr[O5]))

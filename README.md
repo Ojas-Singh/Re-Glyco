@@ -1,3 +1,11 @@
 # Re-Glyco
 
 The Python software utilizes molecular dynamics (MD) simulation results from the glycoshape database to re-glycosylate protein structures predicted by alphafold, a deep learning method for protein structure prediction. The input to the software is a protein structure output by alphafold, and the output is a modified protein structure with glycans (sugar molecules) added at appropriate sites. The incorporation of glycans is achieved through the use of MD simulation results, which ensures that the resulting glycosylated protein structure is physically realistic and stable. This software can be useful for researchers studying the role of glycans in protein function and the impact of glycosylation on protein structure and stability.
+
+
+
+To implement!
+1. Custom uploaded protien.
+2. Algorithm. with phi psi distribution and wiggle.
+2. Glycan npz format. with cluster information.
+3. 
