@@ -93,3 +93,26 @@ def multi(f):
                     mat = np.zeros((len(pdbdata[0]),3))
 
     return pdbdata,frames
+
+
+
+def exportPDBmulti(fout,pdbdata,id):
+    fn= open(fout,"a")
+    k=""
+    fn.write("MODEL "+str(id)+"\n")
+    for i in range(len(pdbdata[0])):
+        line=list("ATOM".ljust(80))
+        line[6:10] = str(pdbdata[0][i]).rjust(5) 
+        line[12:15] = str(pdbdata[1][i]).ljust(4) 
+        line[17:19] = str(pdbdata[2][i]).rjust(3) 
+        line[20:21] = str(pdbdata[3][i]).rjust(2) 
+        line[22:25] = str(pdbdata[4][i]).rjust(4) 
+        line[30:37] = str('{:0.3f}'.format(pdbdata[5][i])).rjust(8) 
+        line[38:45] = str('{:0.3f}'.format(pdbdata[6][i])).rjust(8) 
+        line[46:53] = str('{:0.3f}'.format(pdbdata[7][i])).rjust(8) 
+        line[75:77] = str(pdbdata[8][i]).rjust(3) 
+        line= ''.join(line)
+        fn.write(line+"\n")
+        k=k+line+"\n"
+    fn.write("ENDMDL\n")
+    return k

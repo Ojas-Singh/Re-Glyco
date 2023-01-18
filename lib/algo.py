@@ -286,7 +286,7 @@ def attachwithwiggle(protein,glycans,glycosylation_locations):
         C1 = G.loc[(G['ResId']==2) & (G['Name']== 'C1'),['Number']].iloc[0]['Number'] -1
         O5 = G.loc[(G['ResId']==2) & (G['Name']== 'O5'),['Number']].iloc[0]['Number'] -1
         O1 = G.loc[(G['ResId']==1) & (G['Name']== 'O1'),['Number']].iloc[0]['Number'] -1
-        s=time.time()
+        
         Garr = G[['X','Y','Z']].to_numpy(dtype=float)
         tormeta = loaded["b"]
         torsions = loaded["c"]
@@ -294,6 +294,11 @@ def attachwithwiggle(protein,glycans,glycosylation_locations):
         torsionparts  = loaded["f"]
         torsionparts = np.asarray(torsionparts)
         torsionpoints= np.asarray(torsionpoints)
+        s=time.time()
+        for i in range(1000):
+            Garr1 = Garrfromtorsion(Garr,torsionpoints,torsions,torsionparts)
+        
+        print("exec time",time.time()-s)
         Garr = Garrfromtorsion(Garr,torsionpoints,torsions,torsionparts)
         Garr = optwithwiggle(Garr,O1,OD1,CG,ND2,C1,O5,Parr)
 
@@ -305,7 +310,7 @@ def attachwithwiggle(protein,glycans,glycosylation_locations):
         k+=1
         glycoprotein_final= pd.concat([glycoprotein_final,G])
         Parr=glycoprotein_final[['X','Y','Z']].to_numpy(dtype=float)
-        print("exec time",time.time()-s)
+        
         
     return glycoprotein_final
 
@@ -336,6 +341,19 @@ def Garrfromtorsion(Garr,torsionpoints,torsions,torsionparts):
             # M1 = rotation_matrix(Garr[torsionpoints[i][2]]-Garr[torsionpoints[i][1]],np.radians(torsion[i]-fastest_dihedral(Garr[torsionpoints[i][0]],Garr[torsionpoints[i][1]],Garr[torsionpoints[i][2]],Garr[torsionpoints[i][3]])))
             M1 = rotation_matrix(Garr[torsionpoints[i][2]]-Garr[torsionpoints[i][1]],np.radians(random.uniform(-10, 10)))
 
+            Garr = Garr-Garr[torsionpoints[i][1]]
+            # for j in torsionparts[i][1]:
+            for j in np.where(torsionparts[i])[0]:
+                Garr[j] = np.dot(M1,Garr[j])
+            Garr = Garr+Garr[torsionpoints[i][1]]
+    return Garr
+
+
+@njit(fastmath=True)
+def Garrfromtorsiondemo(Garr,torsionpoints,torsionrange,torsionparts):
+
+    for i in range(len(torsionpoints)):
+            M1 = rotation_matrix(Garr[torsionpoints[i][2]]-Garr[torsionpoints[i][1]],np.radians(random.uniform(-1*torsionrange, torsionrange)))
             Garr = Garr-Garr[torsionpoints[i][1]]
             # for j in torsionparts[i][1]:
             for j in np.where(torsionparts[i])[0]:

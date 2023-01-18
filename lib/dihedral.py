@@ -146,3 +146,5 @@ def kdemax(df):
         ax.set_ylabel('phi')
         ax.set_title(str(col[i]).strip("psi"))
         plt.savefig(str(col[i]).strip("psi")+'kde.png')
+
+

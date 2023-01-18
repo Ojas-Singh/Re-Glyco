@@ -123,18 +123,31 @@ if not uni_id=="":
                 )
         elif st.button('Process with wiggle',key="process_wiggle"):
             st.write('')
-            g = algo.attachwithwiggle(protein,glycans,glycosylation_locations)
+            s=time.time()
+            with st.spinner('Processing...'):
+                g = algo.attachwithwiggle(protein,glycans,glycosylation_locations)
+            st.balloons()
+            st.success("exec time :"+str(time.time()-s)+"Seconds")
             g1 = pdb.exportPDB('output/out.pdb',pdb.to_normal(g))
-            print("ok")
             xyzview1 = py3Dmol.view()
             xyzview1.addModelsAsFrames(g1)
             for n,chain,color in zip(range(len(glycosylation_locations)+1),list("ABCDEFGH"),
-                                        ["lime","cyan","magenta","yellow","salmon","white","blue","orange"]):
+                                        ["grey","#FF7B89","#8A5082","#6F5F90","#758EB7","#A5CAD2","blue","orange"]):
                             if chain=="A":
                                 xyzview1.setStyle({'chain':chain},{'cartoon': {'color':color}})
+                                xyzview1.addSurface(py3Dmol.VDW, {"opacity": 0.4, "color": "lightgrey"},{"hetflag": False})
+
                             else:
-                                xyzview1.setStyle({'chain':chain},{'stick': {'color':color}})
+                                xyzview1.setStyle({'chain':chain},{'stick': {'color':color, "radius":  0.4}})
+            for i in range(len(glycosylation_locations)):
+                xyzview1.addStyle({"chain": "A", "resi": glycosylation_locations[i]["begin"], "elem": "C"},
+                                {"stick": {"color": "red", "radius":  0.2}})
+
+                xyzview1.addStyle({"chain": "A", "resi": glycosylation_locations[i]["begin"]},
+                                    {"stick": {"radius":  0.4}})
+
             xyzview1.setBackgroundColor('#FFFFFF')
+
             xyzview1.zoomTo()
             showmol(xyzview1,height=400,width=1100)
             with open('output/out.pdb') as ofile:
