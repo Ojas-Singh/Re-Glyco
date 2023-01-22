@@ -211,21 +211,81 @@ elif uploaded_file is not None:
                 p+=1
     # st.write(confidence)
     protein = pdb.parse("output/temp/custom.pdb")
-    xyzview = py3Dmol.view()
-    xyzview.addModelsAsFrames(string_data)
-    colors = ["#FF7D45" for x in range(50)]+["#FFDB13" for x in range(20)]+["#65CBF3" for x in range(20)]+["#0053D6" for x in range(15)]
-    xyzview.setStyle({'cartoon':{'color':'grey'}})
-    for resid in range(len(confidence)):
-        xyzview.addStyle({"chain": "A", "resi": str(resid+1)},
-                        {"cartoon": {"color":colors[int(confidence[resid])]}})
-    xyzview.setBackgroundColor('#FFFFFF')
-    xyzview.zoomTo()
-    showmol(xyzview,height=400,width=2000)
+    col1, col2 = st.columns(2)
+    with col1:
+        xyzview = py3Dmol.view()
+        xyzview.addModelsAsFrames(string_data)
+        colors = ["#FF7D45" for x in range(50)]+["#FFDB13" for x in range(20)]+["#65CBF3" for x in range(20)]+["#0053D6" for x in range(15)]
+        xyzview.setStyle({'cartoon':{'color':'grey'}})
+        for resid in range(len(confidence)):
+            xyzview.addStyle({"chain": "A", "resi": str(resid+1)},
+                            {"cartoon": {"color":colors[int(confidence[resid])]}})
+        xyzview.setBackgroundColor('#FFFFFF')
+        xyzview.zoomTo()
+        showmol(xyzview,height=400,width=2000)
+    with col2:
+        container = st.container()
+        container.write("Model Confidence:")
+        annotated_text(("Very high", "(pLDDT > 90)", "#0053D6"))
+        annotated_text(("Confident", "(90 > pLDDT > 70)", "#65CBF3"))
+        annotated_text(("Low", "(70 > pLDDT > 50)", "#FFDB13"))
+        annotated_text( ("Very low", "(pLDDT < 50)", "#FF7D45"))
+    protein_df= pdb.to_DF(protein)
+    spots= protein_df.loc[(protein_df['ResName']=="ASN") & (protein_df['Name']== 'CB'),['ResId']].iloc[:]['ResId'].tolist()
+    # st.write()
     glycosylation_locations = st.multiselect(
     'Select Glycosylation Locations',
-    ['Green', 'Yellow', 'Red', 'Blue'],
+    spots,
     )
-    
+    glycans=[1 for x in range(len(glycosylation_locations))]
+    for i in range(len(glycosylation_locations)):
+        options = st.selectbox(
+                    'Which Glycans to attach on spot : '+str(glycosylation_locations[i])+" ?" ,
+                    ('bisecting','A3G3S1-F3', 'a2',"a2g2","a3g3","m5","m6_1","m6_2","m6_3","m7_1","m7_2","m7_3","m7_4","m8_1","m8_2","m8_3","m9"),key=str(i))
+        glycans[i]=options
+    if st.button('Process',key="process"):
+            st.write('')
+            s=time.time()
+            with st.spinner('Processing...'):
+                g = algo.attach(protein,glycans,glycosylation_locations)
+            st.balloons()
+            st.success("exec time :"+str(time.time()-s)+"Seconds")
+            g1 = pdb.exportPDB('output/out.pdb',pdb.to_normal(g))
+            xyzview1 = py3Dmol.view()
+            xyzview1.addModelsAsFrames(g1)
+            
+            for n,chain,color in zip(range(len(glycosylation_locations)+1),list("ABCDEFGH"),
+                                        ["grey","#FF7B89","#8A5082","#6F5F90","#758EB7","#A5CAD2","blue","orange"]):
+                            if chain=="A":
+                                
+
+                                xyzview1.setStyle({'chain':chain},{'stick': {"opacity": 0.6,'color':color,"radius":  0.2}})
+                                xyzview1.addSurface(py3Dmol.VDW, {"opacity": 0.4, "color": "lightgrey"},{"hetflag": False})
+
+                            else:
+                                xyzview1.setStyle({'chain':chain},{'stick': {'color':color, "radius":  0.4}})
+            for resid in range(len(confidence)):
+                xyzview1.addStyle({"chain": "A", "resi": str(resid+1)},
+                                {"stick": {"color":colors[int(confidence[resid])], "radius":  0.4}})
+            for i in range(len(glycosylation_locations)):
+                xyzview1.addStyle({"chain": "A", "resi": glycosylation_locations[i]["begin"], "elem": "C"},
+                                {"stick": {"color": "red", "radius":  0.2}})
+
+                xyzview1.addStyle({"chain": "A", "resi": glycosylation_locations[i]["begin"]},
+                                    {"stick": {"radius":  0.4}})
+            
+            xyzview1.setBackgroundColor('#FFFFFF')
+
+            xyzview1.zoomTo()
+            showmol(xyzview1,height=400,width=1100)
+            with open('output/out.pdb') as ofile:
+                system = "".join([x for x in ofile])
+                btn = st.download_button(
+                    label="Download Re-Glyco Structure",
+                    data=system,
+                    file_name=uni_id+"_glycosylated.pdb",
+                    mime='text/csv'
+                )
 else:
     st.title('Just Another Glycosylator for Nerds')
     st.header('Under Construction!')

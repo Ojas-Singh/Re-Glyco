@@ -156,24 +156,24 @@ def opt(OD1,CG,ND2,C1,O5,Garr,Parr):
     phif=0
     psif=0
     r=1000000000000000
-    # for pp in range(2000):
-    #     psi = np.random.normal(-97.5, 33)
-    #     phi = np.random.normal(178, 26)
-    #     Garr = rr(phi,psi,OD1,CG,ND2,C1,O5,Garr,Parr)
-    #     ri= steric_fast(Garr,Parr)
-    #     if ri<r:
-    #         phif= phi
-    #         psif= psi
-    #         r=ri
+    for pp in range(2000):
+        psi = np.random.normal(-97.5, 33)
+        phi = np.random.normal(178, 26)
+        Garr = rr(phi,psi,OD1,CG,ND2,C1,O5,Garr,Parr)
+        ri= steric_fast(Garr,Parr)
+        if ri<r:
+            phif= phi
+            psif= psi
+            r=ri
     
-    for phi in range(152,204):
-        for psi in range(-130,-64):
-            Garr = rr(phi,psi,OD1,CG,ND2,C1,O5,Garr,Parr)
-            ri= steric_fast(Garr,Parr)
-            if ri<r:
-                phif= phi
-                psif= psi
-                r=ri
+    # for phi in range(152,204):
+    #     for psi in range(-130,-64):
+    #         Garr = rr(phi,psi,OD1,CG,ND2,C1,O5,Garr,Parr)
+    #         ri= steric_fast(Garr,Parr)
+    #         if ri<r:
+    #             phif= phi
+    #             psif= psi
+    #             r=ri
     return phif,psif,r
 
 
