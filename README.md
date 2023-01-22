@@ -5,7 +5,9 @@ The Python software utilizes molecular dynamics (MD) simulation results from the
 
 
 To implement!
-1. Custom uploaded protien.
-2. Algorithm. with phi psi distribution and wiggle.
-2. Glycan npz format. with cluster information.
-3. 
+1. Custom Glycosylation spot.
+2. Clash Detector warning.
+2. Advanced method.
+    wiggle[need work] and different cluster search.
+
+3. best way is to find psi phi first then use that value with wiggle if thats fails too wiggle low confidence area.

@@ -111,6 +111,8 @@ def fastest_dihedral(p0,p1,p2,p3):
         (b1[0]*v[1] - b1[1]*v[0]) * w[2]
     return 180 * np.arctan2(y, x) / np.pi
 
+# @njit(fastmath=True)
+
 
 @njit(fastmath=True)
 def steric_fast(Garr,Parr):
@@ -118,11 +120,16 @@ def steric_fast(Garr,Parr):
     
     # c = distance.cdist(Garr, Parr, 'euclidean')
     c = eucl_opt(Garr, Parr)
-    # c = np.linalg.norm(Garr[:,None,:] - Parr, axis=2)
-    con = c<2.5
-    c2 = np.extract(con, c)
+    
+
+    con1 = c<1.6
+    # con2 = c>0.01
+    # con = np.logical_and(con1,con2)
+    c2 = np.extract(con1, c)
     for i in c2:
-        r+=1/(i+.001)
+        # r+=1/(.001+(i-1.5)**2)
+        r+=20000*np.exp(-((i)**2))
+    # return np.sum(np.reciprocal(c2))
     return r
 
 
@@ -148,18 +155,26 @@ def rr(phi,psi,OD1,CG,ND2,C1,O5,Garr,Parr):
 def opt(OD1,CG,ND2,C1,O5,Garr,Parr):
     phif=0
     psif=0
-    r=100000000
-    for pp in range(1000):
-        phi = random.uniform(-180, 180)
-        psi = random.uniform(-180, 180)
-        Garr = rr(phi,psi,OD1,CG,ND2,C1,O5,Garr,Parr)
-        ri= steric_fast(Garr,Parr)
-        # print(pp,ri)
-        if ri<r:
-            phif= phi
-            psif= psi
-            r=ri
-    return phif,psif
+    r=1000000000000000
+    # for pp in range(2000):
+    #     psi = np.random.normal(-97.5, 33)
+    #     phi = np.random.normal(178, 26)
+    #     Garr = rr(phi,psi,OD1,CG,ND2,C1,O5,Garr,Parr)
+    #     ri= steric_fast(Garr,Parr)
+    #     if ri<r:
+    #         phif= phi
+    #         psif= psi
+    #         r=ri
+    
+    for phi in range(152,204):
+        for psi in range(-130,-64):
+            Garr = rr(phi,psi,OD1,CG,ND2,C1,O5,Garr,Parr)
+            ri= steric_fast(Garr,Parr)
+            if ri<r:
+                phif= phi
+                psif= psi
+                r=ri
+    return phif,psif,r
 
 
 def attach(protein,glycans,glycosylation_locations):
@@ -175,29 +190,28 @@ def attach(protein,glycans,glycosylation_locations):
             continue
         target_ResId= int(glycosylation_locations[i]["begin"])
         # st.write("Glycosylating Spot :",glycosylation_locations[i]["begin"])
-        OD1 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'OD1'),['Number']].iloc[0]['Number'] -1
+        OD1 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'CB'),['Number']].iloc[0]['Number'] -1
         CG = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'CG'),['Number']].iloc[0]['Number'] -1
         ND2 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'ND2'),['Number']].iloc[0]['Number'] -1
         G,loaded = sampling(glycans[i])
 
         C1 = G.loc[(G['ResId']==2) & (G['Name']== 'C1'),['Number']].iloc[0]['Number'] -1
-        O5 = G.loc[(G['ResId']==2) & (G['Name']== 'O5'),['Number']].iloc[0]['Number'] -1
+        O5 = G.loc[(G['ResId']==2) & (G['Name']== 'C2'),['Number']].iloc[0]['Number'] -1
         O1 = G.loc[(G['ResId']==1) & (G['Name']== 'O1'),['Number']].iloc[0]['Number'] -1
         Garr = G[['X','Y','Z']].to_numpy(dtype=float)
         Garr = Garr-Garr[O1]
         Garr = Garr + Parr[ND2]
         axis = np.cross(Parr[CG]-Parr[ND2],Garr[C1]-Parr[ND2])
         an=fastest_angle(Parr[CG],Parr[ND2],Garr[C1])
-        theta = np.radians(109.5 - an)
+        theta = np.radians(125 - an)
         Garr = Garr - Parr[ND2]
         M0 = rotation_matrix(axis, theta)
         for i in range(len(Garr)):
             Garr[i] = np.dot(M0,Garr[i])
         Garr = Garr + Parr[ND2]
-        phi,psi =opt(OD1,CG,ND2,C1,O5,Garr,Parr)
+        phi,psi,dum =opt(OD1,CG,ND2,C1,O5,Garr,Parr)
         Garr = rr(phi,psi,OD1,CG,ND2,C1,O5,Garr,Parr)
-        print(fastest_dihedral(Parr[OD1],Parr[CG],Parr[ND2],Garr[C1]))
-        print(fastest_dihedral(Parr[CG],Parr[ND2],Garr[C1],Garr[O5]))
+        st.write(fastest_dihedral(Parr[OD1],Parr[CG],Parr[ND2],Garr[C1]),fastest_dihedral(Parr[CG],Parr[ND2],Garr[C1],Garr[O5]))
         Gn =  pd.DataFrame(Garr, columns = ['X','Y','Z'])
         G.update(Gn)
         G = G.drop([0,1])
@@ -278,13 +292,13 @@ def attachwithwiggle(protein,glycans,glycosylation_locations):
             continue
         target_ResId= int(glycosylation_locations[i]["begin"])
         # st.write("Glycosylating Spot :",i["begin"])
-        OD1 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'OD1'),['Number']].iloc[0]['Number'] -1
+        OD1 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'CB'),['Number']].iloc[0]['Number'] -1
         CG = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'CG'),['Number']].iloc[0]['Number'] -1
         ND2 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'ND2'),['Number']].iloc[0]['Number'] -1
         G,loaded = sampling(glycans[i])
 
         C1 = G.loc[(G['ResId']==2) & (G['Name']== 'C1'),['Number']].iloc[0]['Number'] -1
-        O5 = G.loc[(G['ResId']==2) & (G['Name']== 'O5'),['Number']].iloc[0]['Number'] -1
+        O5 = G.loc[(G['ResId']==2) & (G['Name']== 'C2'),['Number']].iloc[0]['Number'] -1
         O1 = G.loc[(G['ResId']==1) & (G['Name']== 'O1'),['Number']].iloc[0]['Number'] -1
         
         Garr = G[['X','Y','Z']].to_numpy(dtype=float)
@@ -294,14 +308,9 @@ def attachwithwiggle(protein,glycans,glycosylation_locations):
         torsionparts  = loaded["f"]
         torsionparts = np.asarray(torsionparts)
         torsionpoints= np.asarray(torsionpoints)
-        s=time.time()
-        for i in range(1000):
-            Garr1 = Garrfromtorsion(Garr,torsionpoints,torsions,torsionparts)
-        
-        print("exec time",time.time()-s)
-        Garr = Garrfromtorsion(Garr,torsionpoints,torsions,torsionparts)
-        Garr = optwithwiggle(Garr,O1,OD1,CG,ND2,C1,O5,Parr)
-
+        Garr = optwithwiggle(Garr,O1,OD1,CG,ND2,C1,O5,Parr,torsionpoints,torsions,torsionparts)
+        st.write("Phi : ",fastest_dihedral(Parr[OD1],Parr[CG],Parr[ND2],Garr[C1]))
+        st.write("Psi : ",fastest_dihedral(Parr[CG],Parr[ND2],Garr[C1],Garr[O5]))
         Gn =  pd.DataFrame(Garr, columns = ['X','Y','Z'])
         G.update(Gn)
         G = G.drop([0,1])
@@ -316,22 +325,33 @@ def attachwithwiggle(protein,glycans,glycosylation_locations):
 
 
 @njit(fastmath=True)
-def optwithwiggle(Garr,O1,OD1,CG,ND2,C1,O5,Parr):
-        
-
-        Garr = Garr-Garr[O1]
-        Garr = Garr + Parr[ND2]
-        axis = np.cross(Parr[CG]-Parr[ND2],Garr[C1]-Parr[ND2])
-        an=fastest_angle(Parr[CG],Parr[ND2],Garr[C1])
-        theta = np.radians(109.5 - an)
-        Garr = Garr - Parr[ND2]
-        M0 = rotation_matrix(axis, theta)
-        for i in range(len(Garr)):
-            Garr[i] = np.dot(M0,Garr[i])
-        Garr = Garr + Parr[ND2]
-        phi,psi =opt(OD1,CG,ND2,C1,O5,Garr,Parr)
-        Garr = rr(phi,psi,OD1,CG,ND2,C1,O5,Garr,Parr)
-        return Garr
+def optwithwiggle(GarrM,O1,OD1,CG,ND2,C1,O5,Parr,torsionpoints,torsions,torsionparts):
+        r = 100000000
+            
+        GarrF= GarrM
+        phiF=0
+        psiF=0
+        for i in range(100):
+            Garr = Garrfromtorsion(GarrM,torsionpoints,torsions,torsionparts)
+            Garr = Garr-Garr[O1]
+            Garr = Garr + Parr[ND2]
+            axis = np.cross(Parr[CG]-Parr[ND2],Garr[C1]-Parr[ND2])
+            an=fastest_angle(Parr[CG],Parr[ND2],Garr[C1])
+            theta = np.radians(125 - an)
+            Garr = Garr - Parr[ND2]
+            M0 = rotation_matrix(axis, theta)
+            for i in range(len(Garr)):
+                Garr[i] = np.dot(M0,Garr[i])
+            Garr = Garr + Parr[ND2]
+            phi,psi,ri =opt(OD1,CG,ND2,C1,O5,Garr,Parr)
+            # Garr = rr(178,-97.5,OD1,CG,ND2,C1,O5,Garr,Parr)
+            # ri = steric_fast(Garr,Parr)
+            if ri<r:
+                GarrF= Garr
+                phiF=phi
+                psiF=psi
+        return rr(phiF,psiF,OD1,CG,ND2,C1,O5,GarrF,Parr)
+        # return GarrF
 
 @njit(fastmath=True)
 def Garrfromtorsion(Garr,torsionpoints,torsions,torsionparts):
@@ -339,7 +359,7 @@ def Garrfromtorsion(Garr,torsionpoints,torsions,torsionparts):
     # torsion = torsions[randomidx]
     for i in range(len(torsionpoints)):
             # M1 = rotation_matrix(Garr[torsionpoints[i][2]]-Garr[torsionpoints[i][1]],np.radians(torsion[i]-fastest_dihedral(Garr[torsionpoints[i][0]],Garr[torsionpoints[i][1]],Garr[torsionpoints[i][2]],Garr[torsionpoints[i][3]])))
-            M1 = rotation_matrix(Garr[torsionpoints[i][2]]-Garr[torsionpoints[i][1]],np.radians(random.uniform(-10, 10)))
+            M1 = rotation_matrix(Garr[torsionpoints[i][2]]-Garr[torsionpoints[i][1]],np.radians(random.uniform(-25, 25)))
 
             Garr = Garr-Garr[torsionpoints[i][1]]
             # for j in torsionparts[i][1]:
