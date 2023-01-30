@@ -20,4 +20,4 @@ To implement!
 
 3. best way is to find psi phi first then use that value with wiggle if thats fails too wiggle low confidence area.
 
-Auto dock vena 
+Automate Torsion finder.

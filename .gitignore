@@ -6,3 +6,4 @@ output/temp/*.pdb
 data/*.dry.pdb
 .ipynb_checkpoints
 output/out.pdb
+ignore
