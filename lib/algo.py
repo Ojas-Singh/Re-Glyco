@@ -135,7 +135,7 @@ def opt(CB,CG,ND2,C1,C2,Garr,Parr):
     phif=0
     psif=0
     r=1000000000000000
-    for pp in range(100):
+    for pp in range(200):
         # phi = np.random.normal(-97.5, 33)
         # psi = np.random.normal(178, 26)
         phi = np.random.uniform(-130,-64)
@@ -158,7 +158,7 @@ def attachwithwiggle(protein,glycans,glycosylation_locations):
     Parr=protein_df[['X','Y','Z']].to_numpy(dtype=float)
     glycoprotein_final = copy.deepcopy(protein_df)
     gly=[]
-    ChainId= ["B","C","D","E","F","G","H","I"]
+    ChainId= ["B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
     k=0
     for i in range(len(glycosylation_locations)):
         try: 
@@ -176,6 +176,12 @@ def attachwithwiggle(protein,glycans,glycosylation_locations):
         torsionpoints = loaded["a"]
         torsionparts  = loaded["b"]
         Garr = optwithwiggle(Garr,O1,CB,CG,ND2,C1,C2,Parr,torsionpoints,torsionparts)
+        c = eucl_opt(Garr, Parr)
+        c = c[3:][:]
+        con1 = c<1.6
+        c2 = np.extract(con1, c)
+        if np.sum(c2)> 0:
+            st.warning('Clash detected, rerun or the spot is not glycosylable, [low confidence region near spot.]  ')
         st.write("Spot : ",target_ResId," Phi : ",int(fastest_dihedral(Parr[CB],Parr[CG],Parr[ND2],Garr[C1]))," Psi : ",int(fastest_dihedral(Parr[CG],Parr[ND2],Garr[C1],Garr[C2])))
         Gn =  pd.DataFrame(Garr, columns = ['X','Y','Z'])
         G.update(Gn)
@@ -185,6 +191,7 @@ def attachwithwiggle(protein,glycans,glycosylation_locations):
         k+=1
         glycoprotein_final= pd.concat([glycoprotein_final,G])
         Parr=glycoprotein_final[['X','Y','Z']].to_numpy(dtype=float)
+
     return glycoprotein_final
 
 @njit(fastmath=True)
@@ -193,7 +200,7 @@ def optwithwiggle(GarrM,O1,CB,CG,ND2,C1,C2,Parr,torsionpoints,torsionparts):
         GarrF= GarrM
         phiF=0
         psiF=0
-        for i in range(40):
+        for i in range(20):
             Garr = Garrfromtorsion(GarrM,torsionpoints,torsionparts)
             Garr = Garr-Garr[O1]
             Garr = Garr + Parr[ND2]
@@ -215,7 +222,7 @@ def optwithwiggle(GarrM,O1,CB,CG,ND2,C1,C2,Parr,torsionpoints,torsionparts):
 @njit(fastmath=True)
 def Garrfromtorsion(Garr,torsionpoints,torsionparts):
     for i in range(len(torsionpoints)):
-            M1 = rotation_matrix(Garr[torsionpoints[i][2]]-Garr[torsionpoints[i][1]],np.radians(random.uniform(-25, 25)))
+            M1 = rotation_matrix(Garr[torsionpoints[i][2]]-Garr[torsionpoints[i][1]],np.radians(random.uniform(-10, 10)))
             Garr = Garr-Garr[torsionpoints[i][1]]
             for j in np.where(torsionparts[i])[0]:
                 Garr[j] = np.dot(M1,Garr[j])
