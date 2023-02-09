@@ -13,7 +13,6 @@ def fastest_angle(p0,p1,p2):
     angle = np.arccos(cosine_angle)
     return np.degrees(angle)
 
-
 @njit(fastmath=True)
 def fastest_dihedral(p0,p1,p2,p3):
     b1 = p2 - p1
@@ -25,7 +24,6 @@ def fastest_dihedral(p0,p1,p2,p3):
         (b1[2]*v[0] - b1[0]*v[2]) * w[1] + \
         (b1[0]*v[1] - b1[1]*v[0]) * w[2]
     return 180 * np.arctan2(y, x) / np.pi
-
 
 def res2input(B,A,C,O,df):
     # a, b ResId
@@ -147,4 +145,31 @@ def kdemax(df):
         ax.set_title(str(col[i]).strip("psi"))
         plt.savefig(str(col[i]).strip("psi")+'kde.png')
 
+def pairtoname(pairs,df):
+    names=[]
+    for i in pairs:
+        name=""
+        a = df.loc[(df['Number']==i[0]),['ResId']].iloc[0]['ResId']
+        b = df.loc[(df['Number']==i[1]),['ResId']].iloc[0]['ResId']
+        c = df.loc[(df['Number']==i[2]),['ResId']].iloc[0]['ResId']
+        d = df.loc[(df['Number']==i[3]),['ResId']].iloc[0]['ResId']
+        
+        if not (a==b==c==d):
+            name+=str(a)+"_"+str(d)+"_"
+        else:
+            name+=str(a)
+        names.append(name)
+    return names
 
+def pairstotorsion(pairs,frames,torsion_names):
+    torsiondata=[]
+    for i in pairs:
+        torsion = []
+        for j in frames:
+            torsion.append(fastest_dihedral(j[int(i[0]-1)],j[int(i[1]-1)],j[int(i[2]-1)],j[int(i[3]-1)]))
+        torsiondata.append(torsion)
+    
+    torsiondataDF = pd.DataFrame(data=torsiondata)
+    torsiondataDF = torsiondataDF.transpose()
+    torsiondataDF.columns = torsion_names
+    return torsiondataDF

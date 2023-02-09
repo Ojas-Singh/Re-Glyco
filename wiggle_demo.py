@@ -19,7 +19,7 @@ st.title('Glycan Conformation Sampler for Nerds')
 st.header('')
 st.subheader("")
 name="bisecting"
-fold="data/bisecting.pdb"
+fold="data//bisecting/bisecting.pdb"
 df = pd.read_csv('output/'+name+'torsions.csv')
 pca_df = pd.read_csv('output/'+name+'pca.csv')
 with open(fold) as ifile:
@@ -135,16 +135,16 @@ with open(fold) as ifile:
         if st.button('Process',key="process"):
             G = pdb.parse("output/cluster/"+str(cluster1)+".pdb")
             G= pdb.to_DF(G)
-            loaded = np.load('data/bisecting.npz',allow_pickle=True)
+            loaded = np.load('data/bisecting/bisecting_torparts.npz',allow_pickle=True)
             Garr = G[['X','Y','Z']].to_numpy(dtype=float)
-            tormeta = loaded["b"]
+            # tormeta = loaded["b"]
 
             # torsions = loaded["c"]
 
-            torsionpoints = loaded["d"]
-            torsionparts  = loaded["f"]
-            torsionparts = np.asarray(torsionparts)
-            torsionpoints= np.asarray(torsionpoints)
+            torsionpoints = loaded["a"]
+            torsionparts  = loaded["b"]
+            # torsionparts = np.asarray(torsionparts)
+            # torsionpoints= np.asarray(torsionpoints)
             molecules = []
             for idx in range(20):
                 Garr1 = algo.Garrfromtorsiondemo(Garr,torsionpoints,torsionrange,torsionparts)

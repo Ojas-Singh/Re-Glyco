@@ -13,11 +13,7 @@ streamlit run main.py
 
 
 To implement!
-1. Custom Glycosylation spot.
-2. Clash Detector warning.
-2. Advanced method.
-    wiggle[need work] and different cluster search.
+1. convegence thing with max iter limit.
+2. warning user that we used non standard angle to attach, as standard failed.
+3. Implement Cluster.
 
-3. best way is to find psi phi first then use that value with wiggle if thats fails too wiggle low confidence area.
-
-Automate Torsion finder.

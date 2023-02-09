@@ -1,7 +1,6 @@
 import random
 import pandas as pd
 import numpy as np
-import pandas as pd
 from lib import pdb 
 import copy
 from numba import njit
@@ -131,15 +130,15 @@ def rr(phi,psi,CB,CG,ND2,C1,C2,Garr,Parr):
     return Garr
 
 @njit(fastmath=True)
-def opt(CB,CG,ND2,C1,C2,Garr,Parr):
+def opt(CB,CG,ND2,C1,C2,Garr,Parr,phisd,psisd):
     phif=0
     psif=0
     r=1000000000000000
     for pp in range(200):
         # phi = np.random.normal(-97.5, 33)
         # psi = np.random.normal(178, 26)
-        phi = np.random.uniform(-130,-64)
-        psi = np.random.uniform(152,204)
+        phi = np.random.uniform(phisd[0],phisd[1])
+        psi = np.random.uniform(psisd[0],psisd[1])
         Garr = rr(phi,psi,CB,CG,ND2,C1,C2,Garr,Parr)
         ri= steric_fast(Garr,Parr)
         if ri<r:
@@ -153,7 +152,7 @@ def sampling(Glycanid):
     loaded = np.load("data/"+Glycanid+"/"+Glycanid+"_torparts.npz",allow_pickle=True)
     return pdb.to_DF(G),loaded
 
-def attachwithwiggle(protein,glycans,glycosylation_locations):
+def attach(protein,glycans,glycosylation_locations,phisd,psisd):
     protein_df= pdb.to_DF(protein)
     Parr=protein_df[['X','Y','Z']].to_numpy(dtype=float)
     glycoprotein_final = copy.deepcopy(protein_df)
@@ -173,15 +172,18 @@ def attachwithwiggle(protein,glycans,glycosylation_locations):
         C2 = G.loc[(G['ResId']==2) & (G['Name']== 'C2'),['Number']].iloc[0]['Number'] -1
         O1 = G.loc[(G['ResId']==1) & (G['Name']== 'O1'),['Number']].iloc[0]['Number'] -1
         Garr = G[['X','Y','Z']].to_numpy(dtype=float)
+        Garr_dummy = G[['X','Y','Z']].to_numpy(dtype=float)
         torsionpoints = loaded["a"]
         torsionparts  = loaded["b"]
-        Garr = optwithwiggle(Garr,O1,CB,CG,ND2,C1,C2,Parr,torsionpoints,torsionparts)
+        clash= False
+        Garr = optwithwiggle(Garr,O1,CB,CG,ND2,C1,C2,Parr,torsionpoints,torsionparts,np.asarray(phisd),np.asarray(psisd))
         c = eucl_opt(Garr, Parr)
         c = c[3:][:]
         con1 = c<1.6
         c2 = np.extract(con1, c)
         if np.sum(c2)> 0:
-            st.warning('Clash detected, rerun or the spot is not glycosylable, [low confidence region near spot.]  ')
+            print(np.sum(c2))
+            clash=True     
         st.write("Spot : ",target_ResId," Phi : ",int(fastest_dihedral(Parr[CB],Parr[CG],Parr[ND2],Garr[C1]))," Psi : ",int(fastest_dihedral(Parr[CG],Parr[ND2],Garr[C1],Garr[C2])))
         Gn =  pd.DataFrame(Garr, columns = ['X','Y','Z'])
         G.update(Gn)
@@ -192,10 +194,10 @@ def attachwithwiggle(protein,glycans,glycosylation_locations):
         glycoprotein_final= pd.concat([glycoprotein_final,G])
         Parr=glycoprotein_final[['X','Y','Z']].to_numpy(dtype=float)
 
-    return glycoprotein_final
+    return glycoprotein_final,clash
 
 @njit(fastmath=True)
-def optwithwiggle(GarrM,O1,CB,CG,ND2,C1,C2,Parr,torsionpoints,torsionparts):
+def optwithwiggle(GarrM,O1,CB,CG,ND2,C1,C2,Parr,torsionpoints,torsionparts,phisd,psisd):
         r = 100000000
         GarrF= GarrM
         phiF=0
@@ -212,7 +214,7 @@ def optwithwiggle(GarrM,O1,CB,CG,ND2,C1,C2,Parr,torsionpoints,torsionparts):
             for i in range(len(Garr)):
                 Garr[i] = np.dot(M0,Garr[i])
             Garr = Garr + Parr[ND2]
-            phi,psi,ri =opt(CB,CG,ND2,C1,C2,Garr,Parr)
+            phi,psi,ri =opt(CB,CG,ND2,C1,C2,Garr,Parr,phisd,psisd)
             if ri<r:
                 GarrF= Garr
                 phiF=phi

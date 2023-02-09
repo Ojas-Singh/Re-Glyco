@@ -13,3 +13,4 @@ def G_flatten(frame):
     funcc = np.vectorize(Gfunction)
     G_flat = funcc(G_flat)
     return G_flat
+
