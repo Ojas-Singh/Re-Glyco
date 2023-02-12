@@ -150,14 +150,29 @@ def pairtoname(pairs,df):
     for i in pairs:
         name=""
         a = df.loc[(df['Number']==i[0]),['ResId']].iloc[0]['ResId']
+        aa = df.loc[(df['Number']==i[0]),['Name']].iloc[0]['Name']
         b = df.loc[(df['Number']==i[1]),['ResId']].iloc[0]['ResId']
+        bb = df.loc[(df['Number']==i[1]),['Name']].iloc[0]['Name']
         c = df.loc[(df['Number']==i[2]),['ResId']].iloc[0]['ResId']
+        cc = df.loc[(df['Number']==i[2]),['Name']].iloc[0]['Name']
         d = df.loc[(df['Number']==i[3]),['ResId']].iloc[0]['ResId']
-        
+        dd = df.loc[(df['Number']==i[3]),['Name']].iloc[0]['Name']
+
+        t_type=""
         if not (a==b==c==d):
-            name+=str(a)+"_"+str(d)+"_"
+            if (aa== "O5" and bb=="C1" and cc.startswith('O') and dd.startswith('C')) or (dd== "O5" and cc=="C1" and bb.startswith('O') and aa.startswith('O')):
+                t_type ="phi"
+            elif (aa== "C1" and bb.startswith('C2') and cc.startswith('O') and dd.startswith('C')) or (dd== "C1" and cc.startswith('C2') and bb.startswith('O') and aa.startswith('C')):
+                t_type ="phi"
+            else:
+                t_type ="psi"
         else:
-            name+=str(a)
+            
+            if (aa.startswith('O') and bb=="C6" and cc=="C5" and dd=="C4") or (dd.startswith('O') and cc=="C6" and bb=="C5" and aa=="C4"):
+                t_type="omega"
+        ls=[int(a),int(d)]
+        ls.sort()
+        name+=str(ls[0])+"_"+str(ls[1])+"_"+t_type   
         names.append(name)
     return names
 

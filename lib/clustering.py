@@ -7,6 +7,38 @@ import matplotlib.pyplot as plt
 import scipy.stats as stat
 from pylab import cm
 
+def normalizetorsion(df):
+    tor = df.loc[:, df.columns!='i'].to_numpy()
+    tor=tor.T
+    normalized = []
+    
+    for angle in range(len(tor)): 
+        x = 0
+        y = 0
+        for i in tor[angle]:
+            x += np.cos(np.deg2rad(i))
+            y += np.sin(np.deg2rad(i))
+        average_angle = np.arctan2(y, x)
+        # print(average_angle)
+        for i in range(len(tor[angle])):
+            tor[angle][i]=np.arctan(np.tan(np.deg2rad(tor[angle][i])-average_angle))
+    tor=tor.T
+    return tor
+
+def pcawithT(tor):
+    
+    pca = PCA(n_components=2)
+    t = pca.fit_transform(tor)
+    x=[]
+    y=[]
+    for i in t:
+        x.append(i[0])
+        y.append(i[1])
+    df = pd.DataFrame(data=np.column_stack((x,y)), columns = ['X','Y'])
+    PCA_components = pd.DataFrame(t)
+    return df,PCA_components
+
+
 def pcawithG(frames,idx_noH):
     G = np.zeros((len(frames),int(len(frames[0][np.asarray(idx_noH,dtype=int)])*(len(frames[0][np.asarray(idx_noH,dtype=int)])+1)/2)))
     for i in range(len(frames)):
@@ -69,21 +101,22 @@ def filterlow(data,nth):
     values = np.vstack([x, y])
     kernel = stat.gaussian_kde(values)
     f = np.reshape(kernel(positions).T, xx.shape)
-    # fig = plt.figure()
-    # mpl.rcParams['font.family'] = 'Cambria'
-    # plt.rcParams['font.size'] = 12
-    # plt.rcParams['axes.linewidth'] = 2
-    # ax = fig.add_subplot(projection='3d')
-    # ax.plot_surface(xx, yy, f, cmap=plt.cm.YlGnBu_r)
-    # ax.set_xlim(xmin, xmax)
-    # ax.set_ylim(ymin, ymax)
-    # ax.set_xlabel('')
-    # ax.set_ylabel('')
-    # ax.set_title("PCA Space Density")
-    # ax.view_init(elev=-15, azim=-59)
-    # ax.contourf(xx, yy, f, zdir='z', offset=-0.8, cmap=plt.cm.YlGnBu_r)
-    # plt.savefig('PCA_KDE.png',dpi=450)
-    # plt.clf()
+    fig = plt.figure()
+    mpl.rcParams['font.family'] = 'Cambria'
+    plt.rcParams['font.size'] = 12
+    plt.rcParams['axes.linewidth'] = 2
+    ax = fig.add_subplot(projection='3d')
+    ax.plot_surface(xx, yy, f, cmap=plt.cm.YlGnBu_r)
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+    ax.set_xlabel('')
+    ax.set_ylabel('')
+    ax.set_title("PCA Space Density")
+    ax.view_init(elev=-15, azim=-59)
+    ax.contourf(xx, yy, f, zdir='z', offset=-0.8, cmap=plt.cm.YlGnBu_r)
+    # plt.show()
+    plt.savefig('PCA_KDE.png',dpi=450)
+    plt.clf()
     l=[]
     for i in range(len(x)):
         l.append([f[int(nux(x[i],np.abs(xmax-xmin),xmin))-1][int(nuy(y[i],np.abs(ymax-ymin),ymin))-1],i])
@@ -95,15 +128,15 @@ def filterlow(data,nth):
     for i in range(int(.1*len(x))):
         idx_top[l[i][1]] = False
         idx_bottom[l[i][1]] = True
-    # x= np.asarray(x)
-    # y= np.asarray(y)
-    # fig = plt.figure()
-    # ax = fig.gca()
-    # cfset = ax.contourf(xx, yy, f, cmap='Blues')
-    # ax.scatter(x[idx_top],y[idx_top],color="#78517C",s=.2)
-    # ax.scatter(x[idx_bottom],y[idx_bottom],color="#F65058FF",s=.2)
-    # ax.set_title("Conformation Filter (>10%)")
-    # plt.savefig('PCA_filter.png',dpi=450)
+    x= np.asarray(x)
+    y= np.asarray(y)
+    fig = plt.figure()
+    ax = fig.gca()
+    cfset = ax.contourf(xx, yy, f, cmap='Blues')
+    ax.scatter(x[idx_top],y[idx_top],color="#78517C",s=.2)
+    ax.scatter(x[idx_bottom],y[idx_bottom],color="#F65058FF",s=.2)
+    ax.set_title("Conformation Filter (>10%)")
+    plt.savefig('PCA_filter.png',dpi=450)
     
     return idx_top
 

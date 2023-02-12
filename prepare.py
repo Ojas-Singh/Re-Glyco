@@ -10,7 +10,8 @@ from random import randint
 
 
 
-name="bisecting"
+# name="A3G3S1-F3"
+name =  "bisecting"
 f="data/"+name+"/"+name+".dry.pdb"
 
 pdbdata, frames = pdb.multi(f)
@@ -23,12 +24,20 @@ df = pdb.to_DF(pdbdata)
 # pca20.to_csv("data/"+name+"/"+name+'_G_pca_full.csv',index_label="i") 
 
 
-pairs = tfindr.savetotorparts(name)
-torsion_names = dihedral.pairtoname(pairs,df)
+pairs,external,internal = tfindr.torsionspairs(name)
+pairs = np.asarray(pairs)
 
+torsion_names = dihedral.pairtoname(external,df)
+ext_DF = dihedral.pairstotorsion(external,frames,torsion_names)
+for i in range(len(internal)):
+    torsion_names.append("internal")
 torsiondataDF= dihedral.pairstotorsion(pairs,frames,torsion_names)
-torsiondataDF.to_csv("data/"+name+"/"+name+'_torsions.csv')
+torsiondataDF.to_csv("data/"+name+"/"+name+'_torsions.csv',index_label="i")
 
+tor=clustering.normalizetorsion(ext_DF)
+pca2,pca20 = clustering.pcawithT(tor)
+pca2.to_csv("data/"+name+"/"+name+'_T_pca.csv',index_label="i")  
+# pca20.to_csv("data/"+name+"/"+name+'_T_pca_full.csv',index_label="i") 
 
 #plots all diherdal KDEs
 # dihedral.kdemax(torsiondataDF)
