@@ -176,8 +176,8 @@ def torsionspairs(name):
                 
                 else:
                     internal.append([m[0],k,node,j])
-    nx.draw(G, pos=nx.kamada_kawai_layout(G),node_color=color_map, with_labels = True)
-    plt.show()
+    # nx.draw(G, pos=nx.kamada_kawai_layout(G),node_color=color_map, with_labels = True)
+    # plt.show()
 
     anotherlist=[]
     pairs = external + internal
