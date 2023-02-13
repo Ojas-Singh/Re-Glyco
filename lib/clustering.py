@@ -112,7 +112,7 @@ def filterlow(data,nth):
     ax.view_init(elev=-15, azim=-59)
     ax.contourf(xx, yy, f, zdir='z', offset=-0.8, cmap=plt.cm.YlGnBu_r)
     # plt.show()
-    plt.savefig('PCA_KDE.png',dpi=450)
+    plt.savefig('output/PCA_KDE.png',dpi=450)
     plt.clf()
     l=[]
     for i in range(len(x)):
@@ -133,7 +133,7 @@ def filterlow(data,nth):
     ax.scatter(x[idx_top],y[idx_top],color="#78517C",s=.2)
     ax.scatter(x[idx_bottom],y[idx_bottom],color="#F65058FF",s=.2)
     ax.set_title("Conformation Filter (>10%)")
-    plt.savefig('PCA_filter.png',dpi=450)
+    plt.savefig('/output/PCA_filter.png',dpi=450)
     
     return idx_top
 
