@@ -18,11 +18,12 @@ pdbdata, frames = pdb.multi(f)
 df = pdb.to_DF(pdbdata)
 
 
-# idx_noH=df.loc[(df['Element']!="H"),['Number']].iloc[:]['Number']-1
-# pca2,pca20 = clustering.pcawithG(frames,idx_noH)
-# pca2.to_csv("data/"+name+"/"+name+'_G_pca.csv',index_label="i")  
-# pca20.to_csv("data/"+name+"/"+name+'_G_pca_full.csv',index_label="i") 
+idx_noH=df.loc[(df['Element']!="H"),['Number']].iloc[:]['Number']-1
+pcaG= clustering.pcawithG(frames,idx_noH,2)
+pcaG.to_csv("data/"+name+"/"+name+'_G_pca.csv',index_label="i")
 
+tsneG = clustering.tsnewithG(frames,idx_noH,2)
+tsneG.to_csv("data/"+name+"/"+name+'_G_pca.csv',index_label="i")  
 
 pairs,external,internal = tfindr.torsionspairs(name)
 pairs = np.asarray(pairs)
@@ -35,9 +36,12 @@ torsiondataDF= dihedral.pairstotorsion(pairs,frames,torsion_names)
 torsiondataDF.to_csv("data/"+name+"/"+name+'_torsions.csv',index_label="i")
 
 tor=clustering.normalizetorsion(ext_DF)
-pca2,pca20 = clustering.pcawithT(tor)
-pca2.to_csv("data/"+name+"/"+name+'_T_pca.csv',index_label="i")  
-# pca20.to_csv("data/"+name+"/"+name+'_T_pca_full.csv',index_label="i") 
+pcaT = clustering.pcawithT(tor,2)
+pcaT.to_csv("data/"+name+"/"+name+'_T_pca.csv',index_label="i")  
+
+tsneT = clustering.tsnewithT(tor,2)
+tsneT.to_csv("data/"+name+"/"+name+'_T_tsne.csv',index_label="i") 
+
 
 #plots all diherdal KDEs
 # dihedral.kdemax(torsiondataDF)

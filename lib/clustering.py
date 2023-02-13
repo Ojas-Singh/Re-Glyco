@@ -6,12 +6,11 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import scipy.stats as stat
 from pylab import cm
+from sklearn.manifold import TSNE
 
 def normalizetorsion(df):
     tor = df.loc[:, df.columns!='i'].to_numpy()
     tor=tor.T
-    normalized = []
-    
     for angle in range(len(tor)): 
         x = 0
         y = 0
@@ -25,35 +24,33 @@ def normalizetorsion(df):
     tor=tor.T
     return tor
 
-def pcawithT(tor):
-    
-    pca = PCA(n_components=2)
+def pcawithT(tor,dim):
+    pca = PCA(n_components=dim)
     t = pca.fit_transform(tor)
-    x=[]
-    y=[]
-    for i in t:
-        x.append(i[0])
-        y.append(i[1])
-    df = pd.DataFrame(data=np.column_stack((x,y)), columns = ['X','Y'])
-    PCA_components = pd.DataFrame(t)
-    return df,PCA_components
+    return pd.DataFrame(t)
+
+def tsnewithT(tor,dim):
+    t= TSNE(n_components=dim, learning_rate='auto',init='random', perplexity=50).fit_transform(tor)
+    return pd.DataFrame(t)
 
 
-def pcawithG(frames,idx_noH):
+
+def pcawithG(frames,idx_noH,dim):
     G = np.zeros((len(frames),int(len(frames[0][np.asarray(idx_noH,dtype=int)])*(len(frames[0][np.asarray(idx_noH,dtype=int)])+1)/2)))
     for i in range(len(frames)):
         G[i]= graph.G_flatten(frames[i][np.asarray(idx_noH,dtype=int)])
-    pca = PCA(n_components=20)
+    pca = PCA(n_components=dim)
     t = pca.fit_transform(G)
-    x=[]
-    y=[]
-    for i in t:
-        x.append(i[0])
-        y.append(i[1])
-    df = pd.DataFrame(data=np.column_stack((x,y)), columns = ['X','Y'])
-    
     PCA_components = pd.DataFrame(t)
-    return df,PCA_components
+    return PCA_components
+
+def tsnewithG(frames,idx_noH,dim):
+    G = np.zeros((len(frames),int(len(frames[0][np.asarray(idx_noH,dtype=int)])*(len(frames[0][np.asarray(idx_noH,dtype=int)])+1)/2)))
+    for i in range(len(frames)):
+        G[i]= graph.G_flatten(frames[i][np.asarray(idx_noH,dtype=int)])
+    t= TSNE(n_components=dim, learning_rate='auto',init='random', perplexity=50).fit_transform(G)
+    return pd.DataFrame(t)
+
 
 
 def findmaxima(f):

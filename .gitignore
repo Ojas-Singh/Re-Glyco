@@ -2,8 +2,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 .vscode
-output/temp/*.pdb
-data/*.dry.pdb
+output/*
+data/*
 .ipynb_checkpoints
-output/out.pdb
 ignore
