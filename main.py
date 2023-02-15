@@ -10,6 +10,7 @@ from io import StringIO
 import io
 from annotated_text import annotated_text
 import os
+import config
 
 st.set_page_config(page_title="Re-GLyco", page_icon=None, layout="wide", initial_sidebar_state="auto", menu_items=None)
 
@@ -96,8 +97,7 @@ if not uni_id=="" and uploaded_file is None:
                 st.write("Only N Glycosylation yet! Spot :",glycosylation_locations[i]["begin"]," is ",glycosylation_locations[i]["description"])
             else:
                 glycosylation_locations_N.append(glycosylation_locations[i])
-        root='data'
-        dirlist = [ item for item in os.listdir(root) if os.path.isdir(os.path.join(root, item)) ]
+        dirlist = [ item for item in os.listdir(config.data_dir) if os.path.isdir(os.path.join(config.data_dir, item)) ]
         for i in range(len(glycosylation_locations_N)): 
             options = st.selectbox(
                         'Which Glycans to attach on spot : '+str(glycosylation_locations_N[i]["begin"])+" ?" ,

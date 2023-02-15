@@ -8,6 +8,7 @@ import numba as nb
 import streamlit as st
 import math
 import os
+import config
 
 @njit(fastmath=True,parallel=True)
 def eucl_opt(A, B):
@@ -148,8 +149,8 @@ def opt(CB,CG,ND2,C1,C2,Garr,Parr,phisd,psisd):
     return phif,psif,r
 
 def sampling(Glycanid):
-    G = pdb.parse("data/"+Glycanid+"/"+Glycanid+".pdb")
-    loaded = np.load("data/"+Glycanid+"/"+Glycanid+"_torparts.npz",allow_pickle=True)
+    G = pdb.parse(config.data_dir+Glycanid+"/"+Glycanid+".pdb")
+    loaded = np.load(config.data_dir+Glycanid+"/"+Glycanid+"_torparts.npz",allow_pickle=True)
     return pdb.to_DF(G),loaded
 
 def attach(protein,glycans,glycosylation_locations,phisd,psisd):
