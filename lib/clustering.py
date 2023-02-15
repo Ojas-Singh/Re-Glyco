@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import scipy.stats as stat
 from pylab import cm
 from sklearn.manifold import TSNE
+from sklearn.cluster import KMeans,SpectralCoclustering,SpectralClustering,DBSCAN,MiniBatchKMeans,OPTICS
 
 def normalizetorsion(df):
     tor = df.loc[:, df.columns!='i'].to_numpy()
@@ -32,8 +33,6 @@ def pcawithT(tor,dim):
 def tsnewithT(tor,dim):
     t= TSNE(n_components=dim, learning_rate='auto',init='random', perplexity=50).fit_transform(tor)
     return pd.DataFrame(t)
-
-
 
 def pcawithG(frames,idx_noH,dim):
     G = np.zeros((len(frames),int(len(frames[0][np.asarray(idx_noH,dtype=int)])*(len(frames[0][np.asarray(idx_noH,dtype=int)])+1)/2)))
@@ -82,13 +81,104 @@ def nuy(y,d,ymin):
     # return ymin + d*y/100
     return (y-ymin)*100/d
 
-def filterlow(data,nth):
+def nx(x,d,xmin):
+    return xmin + d*x/100
+    # return (x-xmin)*100/d
+
+def ny(y,d,ymin):
+    return ymin + d*y/100
+    # return (y-ymin)*100/d
+
+def filterlow(data,k):
     x=[]
     y=[]
     for i in range(len(data)):
-        if i%nth==0:
-            x.append(data.iloc[i,0])
-            y.append(data.iloc[i,1])
+        x.append(data.iloc[i,0])
+        y.append(data.iloc[i,1])
+    s=pd.DataFrame([x,y])
+    s=s.transpose()
+    xmin, xmax = min(x), max(x)
+    ymin, ymax = min(y), max(y)
+    xx, yy = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
+    positions = np.vstack([xx.ravel(), yy.ravel()])
+    values = np.vstack([x, y])
+    kernel = stat.gaussian_kde(values)
+    f = np.reshape(kernel(positions).T, xx.shape)
+    l=[]
+    for i in range(len(x)):
+        l.append([f[int(nux(x[i],np.abs(xmax-xmin),xmin))-1][int(nuy(y[i],np.abs(ymax-ymin),ymin))-1],i])
+    l.sort()
+    idx_top=np.ones(len(x),dtype=bool) 
+    idx_bottom = np.zeros(len(x),dtype=bool) 
+    for i in range(int(k*len(x))):
+        idx_top[l[i][1]] = False
+        idx_bottom[l[i][1]] = True
+    # x= np.asarray(x)
+    # y= np.asarray(y)
+    # fig = plt.figure()
+    # ax = fig.gca()
+    # cfset = ax.contourf(xx, yy, f, cmap='Blues')
+    # ax.scatter(x[idx_top],y[idx_top],color="#78517C",s=.2)
+    # ax.scatter(x[idx_bottom],y[idx_bottom],color="#F65058FF",s=.2)
+    # ax.set_title("Conformation Filter (>10%)")
+    # # plt.savefig('/output/PCA_filter.png',dpi=450)
+    # plt.show()
+    # plt.clf()
+    loc_min = findmaxima(f)
+    loc=[]
+    for i in loc_min:
+        loc.append([f[i[0]][i[1]],(i[0],i[1])])
+    loc.sort()
+    xw=[]
+    yw=[]
+    for i in range(len(loc)):
+        xw.append(nx(loc[i][1][0],np.abs(xmax-xmin),xmin))
+        yw.append(ny(loc[i][1][1],np.abs(ymax-ymin),ymin))
+    ini=[]
+    numofcluster=len(loc)
+    print(numofcluster)
+    for i in range(numofcluster):
+        ini.append([xw[i],yw[i]])
+    popp=[]
+    for i in ini:
+        o=[]
+        for j in range(len(data.iloc[:,0])):
+            o.append([np.linalg.norm(np.asarray(i)-[data.iloc[j,0],data.iloc[j,1]]),data.iloc[j,2]])
+        o.sort()
+        popp.append([i,o[0][1]])
+    return idx_top,popp
+
+def cluster(data,numofcluster,idx_top):
+    from sklearn.metrics.pairwise import pairwise_distances_argmin
+    s = data.loc[:, data.columns!='i'].to_numpy()
+    # s = normalizetorsion(data)
+    s = s[idx_top]
+    # clustering = SpectralClustering(n_clusters=numofcluster).fit(s)
+    clustering = MiniBatchKMeans(compute_labels=True,n_clusters=numofcluster,init='k-means++', max_iter=5000,batch_size=4).fit(s)
+    # mbk_means_cluster_centers = np.sort(clustering.cluster_centers_, axis = 0)
+    # clustering_labels = pairwise_distances_argmin(s, mbk_means_cluster_centers)
+    # clustering =  DBSCAN(eps=8, min_samples=10).fit(s)
+    # clustering = KMeans(n_clusters=numofcluster).fit(s)
+    # clustering =  OPTICS(min_samples=100).fit(s)
+    clustering_labels= clustering.labels_
+    label = []
+    k=0
+    for i in idx_top:
+        if i:
+            label.append(clustering_labels[k])
+            k+=1
+        else:
+            label.append(-1)
+
+    data["cluster"] = label
+    return data,label
+
+def plot3dkde(data):
+    x=[]
+    y=[]
+    for i in range(len(data)):
+        x.append(data.iloc[i,0])
+        y.append(data.iloc[i,1])
     s=pd.DataFrame([x,y])
     s=s.transpose()
     xmin, xmax = min(x), max(x)
@@ -111,48 +201,5 @@ def filterlow(data,nth):
     ax.set_title("PCA Space Density")
     ax.view_init(elev=-15, azim=-59)
     ax.contourf(xx, yy, f, zdir='z', offset=-0.8, cmap=plt.cm.YlGnBu_r)
-    # plt.show()
-    plt.savefig('output/PCA_KDE.png',dpi=450)
-    plt.clf()
-    l=[]
-    for i in range(len(x)):
-        l.append([f[int(nux(x[i],np.abs(xmax-xmin),xmin))-1][int(nuy(y[i],np.abs(ymax-ymin),ymin))-1],i])
-    l.sort()
-    
-    
-    idx_top=np.ones(len(x),dtype=bool) 
-    idx_bottom = np.zeros(len(x),dtype=bool) 
-    for i in range(int(.1*len(x))):
-        idx_top[l[i][1]] = False
-        idx_bottom[l[i][1]] = True
-    x= np.asarray(x)
-    y= np.asarray(y)
-    fig = plt.figure()
-    ax = fig.gca()
-    cfset = ax.contourf(xx, yy, f, cmap='Blues')
-    ax.scatter(x[idx_top],y[idx_top],color="#78517C",s=.2)
-    ax.scatter(x[idx_bottom],y[idx_bottom],color="#F65058FF",s=.2)
-    ax.set_title("Conformation Filter (>10%)")
-    plt.savefig('/output/PCA_filter.png',dpi=450)
-    
-    return idx_top
-
-def cluster(data,numofcluster,idx):
-    from sklearn.cluster import KMeans,SpectralCoclustering
-    x=[]
-    y=[]
-    for i in range(len(data)):
-        if i%1==0:
-            x.append(data.iloc[i,0])
-            y.append(data.iloc[i,1])
-    s=pd.DataFrame([x[idx],y[idx]])
-    s=s.transpose()
-    ini=[]
-    for i in range(numofcluster):
-        ini.append([xw[i],yw[i]])
-    clustering = KMeans(n_clusters=numofcluster,init=ini,n_init=1,max_iter=1).fit(s)
-    clustering_labels= clustering.labels_
-    ax.scatter(s.iloc[:,0],s.iloc[:,1],s=0.1,alpha=0.4,c=clustering_labels.astype(float))
-    ax.scatter(xw,yw,color="blue")
     plt.show()
-
+    # plt.savefig('output/PCA_KDE.png',dpi=450)
