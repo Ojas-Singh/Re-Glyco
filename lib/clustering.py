@@ -31,7 +31,7 @@ def pcawithT(tor,dim):
     return pd.DataFrame(t)
 
 def tsnewithT(tor,dim):
-    t= TSNE(n_components=dim, learning_rate='auto',init='random', perplexity=50).fit_transform(tor)
+    t= TSNE(n_components=dim, perplexity=30.0, early_exaggeration=12.0, learning_rate='auto', n_iter=5000,n_iter_without_progress=300, min_grad_norm=1e-07, metric='euclidean', metric_params=None, init='pca', verbose=0, random_state=None, method='barnes_hut', angle=0.5, n_jobs=-1).fit_transform(tor)
     return pd.DataFrame(t)
 
 def pcawithG(frames,idx_noH,dim):
@@ -58,7 +58,7 @@ def tsnewithG(frames,idx_noH,dim):
     G = np.zeros((len(frames),int(len(frames[0][np.asarray(idx_noH,dtype=int)])*(len(frames[0][np.asarray(idx_noH,dtype=int)])+1)/2)))
     for i in range(len(frames)):
         G[i]= graph.G_flatten(frames[i][np.asarray(idx_noH,dtype=int)])
-    t= TSNE(n_components=dim, learning_rate='auto',init='random', perplexity=50).fit_transform(G)
+    t= TSNE(n_components=dim,  perplexity=30.0, early_exaggeration=12.0, learning_rate='auto', n_iter=5000,n_iter_without_progress=300, min_grad_norm=1e-07, metric='euclidean', metric_params=None, init='pca', verbose=0, random_state=None, method='barnes_hut', angle=0.5, n_jobs=-1).fit_transform(G)
     return pd.DataFrame(t)
 
 
