@@ -17,3 +17,12 @@ To implement!
 2. warning user that we used non standard angle to attach, as standard failed.
 3. Implement Cluster.
 
+python3 -m pip -r requirements.txt
+export PATH="$HOME/.local/bin:$PATH"
+
+
+sudo iptables -P INPUT ACCEPT
+sudo iptables -P OUTPUT ACCEPT
+sudo iptables -P FORWARD ACCEPT
+sudo iptables -F
+sudo ufw enable

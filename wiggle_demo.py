@@ -10,21 +10,30 @@ import plotly.express as px
 from sklearn.cluster import KMeans
 import scipy.stats as stg
 import plotly.graph_objects as go
+import config
+import time,os
+from sklearn.cluster import KMeans,SpectralCoclustering,SpectralClustering,DBSCAN,MiniBatchKMeans,OPTICS
 
-import time
-# st.set_page_config(layout="wide")
-# image = Image.open('logo.png')
-# st.sidebar.image(image, caption='')
+
 st.title('Glycan Conformation Sampler for Nerds')
 st.header('')
 st.subheader("")
-name="bisecting"
-fold="data//bisecting/bisecting.pdb"
-df = pd.read_csv('output/'+name+'torsions.csv')
-pca_df = pd.read_csv('output/'+name+'pca.csv')
+dirlist = [ item for item in os.listdir(config.data_dir) if os.path.isdir(os.path.join(config.data_dir, item)) ]
+name = st.selectbox('Glycan Name :  ',(dirlist))
+fold=config.data_dir+ "/"+ name +"/"+ name+ ".pdb"
+f="data/"+name+"/"+name
+molrep = st.selectbox('Molecular Data : ',("Graph","Torsions"))
+if molrep == "Graph":
+    pca_df = pd.read_csv(f+"_G_pca.csv")
+    tsne_df = pd.read_csv(f+"_G_tsne.csv")
+else:
+    pca_df = pd.read_csv(f+"_T_pca.csv")
+    tsne_df = pd.read_csv(f+"_T_tsne.csv")
+
+df = pd.read_csv(config.data_dir+ "/"+ name +"/"+ name+ '_torsions.csv')
 with open(fold) as ifile:
     system = "".join([x for x in ifile])
-    tab1, tab2, tab3 = st.tabs(["Structure", "Clusters", "Sampler"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Structure", "pca","tsne", "Sampler"])
     with tab1:
         col1, col2 = st.columns(2)
         with col1:
@@ -40,26 +49,33 @@ with open(fold) as ifile:
         showmol(xyzview,height=800,width=900)
 
     with tab2:
-        fig0 = px.scatter(
+        fig0 = px.scatter_3d(
             pca_df,
-            x="X",
-            y="Y",
+            x="0",
+            y="1",
+            z="2",
             color="i",
             # color_continuous_scale="reds",
         )
         fig0.update_traces(marker=dict(size=2,),
                   selector=dict(mode='markers'))
+        
+
         st.plotly_chart(fig0, theme="streamlit", use_conatiner_width=True)
         n_clusters = st.slider('How many clusters?', 0, 50, 10)
-        clustering = KMeans(n_clusters).fit(pca_df[['X','Y']])
+        clustering = KMeans(n_clusters).fit(pca_df[['0','1','2']])
+        # clustering =  OPTICS(min_samples=100).fit(pca_df[['0','1']])
         clustering_labels= clustering.labels_
         pca_df.insert(1,"cluster",clustering_labels,False)
         df.insert(1,"cluster",clustering_labels,False)
+        df["cluster"] = df["cluster"].astype(str)
+        pca_df["cluster"] = pca_df["cluster"].astype(str)
         
-        fig1 = px.scatter(
+        fig1 = px.scatter_3d(
             pca_df,
-            x="X",
-            y="Y",
+            x="0",
+            y="1",
+            z="2",
             color="cluster",
             # color_continuous_scale="reds",
         )
@@ -68,20 +84,23 @@ with open(fold) as ifile:
         st.plotly_chart(fig1, theme="streamlit", use_conatiner_width=True)
         popp=[]
         for i in range(n_clusters):
-            df0 = pca_df.loc[df["cluster"] ==int(i)]
+            df0 = pca_df.loc[df["cluster"] ==str(i)]
             o=[]
             pp=clustering.cluster_centers_[i]
             for j in range(len(df0.iloc[:,0])):
-                o.append([np.linalg.norm(np.asarray(pp)-[df0["X"].iloc[j],df0["Y"].iloc[j]]),df0["i"].iloc[j]])
+                o.append([np.linalg.norm(np.asarray(pp[:2])-[df0["0"].iloc[j],df0["1"].iloc[j]]),df0["i"].iloc[j]])
             o.sort()
             popp.append(o[0][1])
         st.write(popp)
-
+        sizee=[]
+        for i in range(len(popp)):
+            sizee.append(100*float(len(df.loc[(df['cluster']==str(i)),['cluster']].iloc[:]['cluster'].to_numpy())/len(df.iloc[:]['cluster'].to_numpy())))
+        st.write(sizee)
         xax = st.selectbox(
-    'How would you like to be contacted?',
+    'Select Torsion for X axis',
     (list(df.columns.values)),key="x")
         yax = st.selectbox(
-        'How would you like to be contacted?',
+        'Select Torsion for Y axis',
         (list(df.columns.values)),key="y")
         t = np.linspace(-1, 1.2, 2000)
         psi = df[xax]
@@ -93,21 +112,118 @@ with open(fold) as ifile:
                 y = y,
                 colorscale = 'Blues'
         ))
+        
+        fig.add_trace(go.Scatter(x=x[popp], y=y[popp],mode='markers'
+                    ))
 
         st.plotly_chart(fig, theme="streamlit", use_container_width=True)
         fig2 = px.scatter(
             df,
             x=xax,
             y=yax,
-            color="cluster",
+            color="i",
             # color_continuous_scale="reds",
         )
         fig2.update_traces(marker=dict(size=2,),
                   selector=dict(mode='markers'))
         st.plotly_chart(fig2, theme="streamlit", use_conatiner_width=True)
+        fig3 = px.scatter(
+            df,
+            x=xax,
+            y=yax,
+            color="cluster",
+            # color_continuous_scale="reds",
+        )
+        fig3.update_traces(marker=dict(size=2,),
+                  selector=dict(mode='markers'))
+        st.plotly_chart(fig3, theme="streamlit", use_conatiner_width=True)
+        
+    with tab3:
+        fig0 = px.scatter_3d(
+            tsne_df,
+            x="0",
+            y="1",
+            z="2",
+            color="i",
+            # color_continuous_scale="reds",
+        )
+        fig0.update_traces(marker=dict(size=2,),
+                  selector=dict(mode='markers'))
+        st.plotly_chart(fig0, theme="streamlit", use_conatiner_width=True)
+        n_clusters = st.slider('How many clusters?', 0, 50, 10,key="tsne")
+        clustering = KMeans(n_clusters).fit(tsne_df[['0','1','2']])
+        clustering_labels= clustering.labels_
+        tsne_df.insert(1,"cluster2",clustering_labels,False)
+        df.insert(1,"cluster2",clustering_labels,False)
+        
+        df["cluster2"] = df["cluster2"].astype(str)
+        tsne_df["cluster2"] = tsne_df["cluster2"].astype(str)
+        
+        fig1 = px.scatter_3d(
+            tsne_df,
+            x="0",
+            y="1",
+            z="2",
+            color="cluster2",
+            # color_continuous_scale="reds",
+        )
+        fig1.update_traces(marker=dict(size=2,),
+                  selector=dict(mode='markers'))
+        st.plotly_chart(fig1, theme="streamlit", use_conatiner_width=True)
+        popp=[]
+        for i in range(n_clusters):
+            df0 = tsne_df.loc[df["cluster2"] ==str(i)]
+            o=[]
+            pp=clustering.cluster_centers_[i]
+            for j in range(len(df0.iloc[:,0])):
+                o.append([np.linalg.norm(np.asarray(pp[:2])-[df0["0"].iloc[j],df0["1"].iloc[j]]),df0["i"].iloc[j]])
+            o.sort()
+            popp.append(o[0][1])
+        st.write(popp)
+
+        xax = st.selectbox(
+    'Select Torsion for X axis',
+    (list(df.columns.values)),key="x")
+        yax = st.selectbox(
+        'Select Torsion for Y axis',
+        (list(df.columns.values)),key="y")
+        t = np.linspace(-1, 1.2, 2000)
+        psi = df[xax]
+        phi = df[yax]
+        x=psi
+        y=phi
+        fig = go.Figure(go.Histogram2dContour(
+                x = x,
+                y = y,
+                colorscale = 'Blues'
+        ))
+        fig.add_trace(go.Scatter(x=x[popp], y=y[popp],mode='markers'
+                    ))
+
+        st.plotly_chart(fig, theme="streamlit", use_container_width=True)
+        fig2 = px.scatter(
+            df,
+            x=xax,
+            y=yax,
+            color="i",
+            # color_continuous_scale="reds",
+        )
+        fig2.update_traces(marker=dict(size=2,),
+                  selector=dict(mode='markers'))
+        st.plotly_chart(fig2, theme="streamlit", use_conatiner_width=True)
+        fig3 = px.scatter(
+            df,
+            x=xax,
+            y=yax,
+            color="cluster2",
+            # color_continuous_scale="reds",
+        )
+        fig3.update_traces(marker=dict(size=2,),
+                  selector=dict(mode='markers'))
+        st.plotly_chart(fig3, theme="streamlit", use_conatiner_width=True)
         
 
-    with tab3:
+    with tab4:
         # clustering = KMeans(50).fit(pca_df[['X','Y']])
         # clustering_labels= clustering.labels_
         # pca_df.insert(1,"cluster",clustering_labels,False)
@@ -115,8 +231,8 @@ with open(fold) as ifile:
         
         fig1 = px.scatter(
             pca_df,
-            x="X",
-            y="Y",
+            x="0",
+            y="1",
             color="cluster",
             # color_continuous_scale="reds",
         )

@@ -43,6 +43,17 @@ def pcawithG(frames,idx_noH,dim):
     PCA_components = pd.DataFrame(t)
     return PCA_components
 
+def pcawithGNB(frames,graph,dim):
+    G = np.zeros((len(frames),int(len(frames[0][np.asarray(idx_noH,dtype=int)])*(len(frames[0][np.asarray(idx_noH,dtype=int)])+1)/2)))
+    for i in range(len(frames)):
+        G[i]= graph.G_flatten(frames[i][np.asarray(idx_noH,dtype=int)])
+    pca = PCA(n_components=dim)
+    t = pca.fit_transform(G)
+    PCA_components = pd.DataFrame(t)
+    return PCA_components
+
+
+
 def tsnewithG(frames,idx_noH,dim):
     G = np.zeros((len(frames),int(len(frames[0][np.asarray(idx_noH,dtype=int)])*(len(frames[0][np.asarray(idx_noH,dtype=int)])+1)/2)))
     for i in range(len(frames)):
@@ -90,11 +101,8 @@ def ny(y,d,ymin):
     # return (y-ymin)*100/d
 
 def filterlow(data,k):
-    x=[]
-    y=[]
-    for i in range(len(data)):
-        x.append(data.iloc[i,0])
-        y.append(data.iloc[i,1])
+    x=data["0"].to_numpy()
+    y=data["1"].to_numpy()
     s=pd.DataFrame([x,y])
     s=s.transpose()
     xmin, xmax = min(x), max(x)
@@ -113,15 +121,15 @@ def filterlow(data,k):
     for i in range(int(k*len(x))):
         idx_top[l[i][1]] = False
         idx_bottom[l[i][1]] = True
-    # x= np.asarray(x)
-    # y= np.asarray(y)
-    # fig = plt.figure()
-    # ax = fig.gca()
-    # cfset = ax.contourf(xx, yy, f, cmap='Blues')
-    # ax.scatter(x[idx_top],y[idx_top],color="#78517C",s=.2)
-    # ax.scatter(x[idx_bottom],y[idx_bottom],color="#F65058FF",s=.2)
-    # ax.set_title("Conformation Filter (>10%)")
-    # # plt.savefig('/output/PCA_filter.png',dpi=450)
+    x= np.asarray(x)
+    y= np.asarray(y)
+    fig = plt.figure()
+    ax = fig.gca()
+    cfset = ax.contourf(xx, yy, f, cmap='Blues')
+    ax.scatter(x[idx_top],y[idx_top],color="#78517C",s=.2)
+    ax.scatter(x[idx_bottom],y[idx_bottom],color="#F65058FF",s=.2)
+    ax.set_title("Conformation Filter (>10%)")
+    plt.savefig('output/PCA_filter.png',dpi=450)
     # plt.show()
     # plt.clf()
     loc_min = findmaxima(f)
@@ -143,7 +151,7 @@ def filterlow(data,k):
     for i in ini:
         o=[]
         for j in range(len(data.iloc[:,0])):
-            o.append([np.linalg.norm(np.asarray(i)-[data.iloc[j,0],data.iloc[j,1]]),data.iloc[j,2]])
+            o.append([np.linalg.norm(np.asarray(i)-[data["0"].iloc[j],data["1"].iloc[j]]),data["i"].iloc[j]])
         o.sort()
         popp.append([i,o[0][1]])
     return idx_top,popp
@@ -174,11 +182,11 @@ def cluster(data,numofcluster,idx_top):
     return data,label
 
 def plot3dkde(data):
-    x=[]
-    y=[]
-    for i in range(len(data)):
-        x.append(data.iloc[i,0])
-        y.append(data.iloc[i,1])
+    x=data["0"].to_numpy()
+    y=data["1"].to_numpy()
+    # for i in range(len(data)):
+    #     x.append(data.iloc[i,0])
+    #     y.append(data.iloc[i,1])
     s=pd.DataFrame([x,y])
     s=s.transpose()
     xmin, xmax = min(x), max(x)

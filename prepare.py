@@ -5,7 +5,7 @@ import config
 
 
 
-name="A3G3S1-F3"
+name="glycan"
 # name =  "bisecting"
 f=config.data_dir+name+"/"+name+".dry.pdb"
 
