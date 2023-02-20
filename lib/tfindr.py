@@ -2,12 +2,12 @@ import numpy as np
 from lib import pdb,graph,dihedral
 import matplotlib.pyplot as plt
 import networkx as nx
-
+import config
 
 
 def savetotorparts(name):
-    f="data/"+name+"/"+name+".pdb"
-    f2 = "data/"+name+"/"+"graph"
+    f=config.data_dir+name+"/"+name+".pdb"
+    f2 = config.data_dir+name+"/"+"graph"
     pdbdata = pdb.parse(f)
     df = pdb.to_DF(pdbdata)
     connect =[]
@@ -65,7 +65,7 @@ def savetotorparts(name):
         for i in nx.node_connected_component(G, node1):
             arr[i-1]=False
         anotherlist.append(arr)
-    np.savez_compressed("data/"+name+"/"+name+"_torparts", a = pairs,b = anotherlist, allow_pickle=True)
+    np.savez_compressed(config.data_dir+name+"/"+name+"_torparts", a = pairs,b = anotherlist, allow_pickle=True)
     return pairs
 
 import numpy as np
@@ -76,8 +76,8 @@ import networkx as nx
 
 
 def torsionspairs(name):
-    f="data/"+name+"/"+name+".pdb"
-    f2 = "data/"+name+"/"+"graph"
+    f=config.data_dir+name+"/"+name+".pdb"
+    f2 = config.data_dir+name+"/"+"graph"
     pdbdata = pdb.parse(f)
     df = pdb.to_DF(pdbdata)
     connect =[]
@@ -193,7 +193,7 @@ def torsionspairs(name):
         for i in nx.node_connected_component(G, node1):
             arr[i-1]=False
         anotherlist.append(arr)
-    np.savez_compressed("data/"+name+"/"+name+"_torparts", a = pairs,b = anotherlist, allow_pickle=True)
+    np.savez_compressed(config.data_dir+name+"/"+name+"_torparts", a = pairs,b = anotherlist, allow_pickle=True)
 
     
     return pairs,external,internal
