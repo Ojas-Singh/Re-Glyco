@@ -31,16 +31,45 @@ def pcawithT(tor,dim):
     return pd.DataFrame(t)
 
 def tsnewithT(tor,dim):
-    t= TSNE(n_components=dim, perplexity=30.0, early_exaggeration=12.0, learning_rate='auto', n_iter=5000,n_iter_without_progress=300, min_grad_norm=1e-07, metric='euclidean', metric_params=None, init='pca', verbose=0, random_state=None, method='barnes_hut', angle=0.5, n_jobs=-1).fit_transform(tor)
+    t= TSNE(n_components=dim, perplexity=50.0, early_exaggeration=12.0, learning_rate='auto', n_iter=1000,n_iter_without_progress=300, min_grad_norm=1e-07, metric='euclidean', metric_params=None, init='pca', verbose=0, random_state=None, n_jobs=-1).fit_transform(tor)
     return pd.DataFrame(t)
 
 def pcawithG(frames,idx_noH,dim):
     G = np.zeros((len(frames),int(len(frames[0][np.asarray(idx_noH,dtype=int)])*(len(frames[0][np.asarray(idx_noH,dtype=int)])+1)/2)))
     for i in range(len(frames)):
         G[i]= graph.G_flatten(frames[i][np.asarray(idx_noH,dtype=int)])
+    #
+    # Scale the dataset; This is very important before you apply PCA
+    #
+    # from sklearn.preprocessing import StandardScaler
+    # sc = StandardScaler()
+    # sc.fit(G)
+    # G_std = sc.transform(G)
+    #
+    # Determine transformed features
+    #
     pca = PCA(n_components=dim)
     t = pca.fit_transform(G)
     PCA_components = pd.DataFrame(t)
+    #
+    # Determine explained variance using explained_variance_ration_ attribute
+    #
+    exp_var_pca = pca.explained_variance_ratio_
+    #
+    # Cumulative sum of eigenvalues; This will be used to create step plot
+    # for visualizing the variance explained by each principal component.
+    #
+    cum_sum_eigenvalues = np.cumsum(exp_var_pca)
+    #
+    # Create the visualization plot
+    #
+    plt.bar(range(0,len(exp_var_pca)), exp_var_pca, alpha=0.5, align='center', label='Individual explained variance')
+    plt.step(range(0,len(cum_sum_eigenvalues)), cum_sum_eigenvalues, where='mid',label='Cumulative explained variance')
+    plt.ylabel('Explained variance ratio')
+    plt.xlabel('Principal component index')
+    plt.legend(loc='best')
+    plt.tight_layout()
+    plt.savefig('output/PCA_variance.png',dpi=450)
     return PCA_components
 
 def pcawithGNB(frames,graph,dim):

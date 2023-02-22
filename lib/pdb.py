@@ -1,6 +1,8 @@
 #PDB Format from https://www.cgl.ucsf.edu/chimera/docs/UsersGuide/tutorials/pdbintro.html
 import numpy as np
 import pandas as pd
+import config
+import os
 
 def to_DF(pdbddata):
     df = pd.DataFrame(data=pdbddata)
@@ -116,3 +118,51 @@ def exportPDBmulti(fout,pdbdata,id):
         k=k+line+"\n"
     fn.write("ENDMDL\n")
     return k
+
+def exportframeidPDB(f,framesid,name):
+    import glob
+    files = glob.glob(config.data_dir+name+"/cluster/*")
+    for t in files:
+        try:
+            os.remove(t)
+        except:
+            pass
+    frames=[]
+    framesid.sort()
+    for i in framesid:
+        frames.append([])
+    with open(f, 'r') as f:
+            lines = f.readlines()
+            k=0
+            pp=False
+            i=1
+            for line in lines:
+                if line.startswith("MODEL") :
+                    if framesid[k][0]==i and k<len(framesid):
+                        pp=True
+                    i+=1
+                if pp:
+                    frames[k].append(line)
+
+                if pp== True and line.startswith("ENDMDL"):
+                    pp=False
+                    k+=1
+                if k == len(framesid):
+                    break
+            for i in range(len(framesid)):
+                fn= open(config.data_dir+name+"/cluster/"+str(framesid[i][1])+"_"+str("{:.2f}".format(framesid[i][2]))+".pdb","w+")
+                fn.write("# Cluster : "+str(i)+" Size : "+str("{:.2f}".format(framesid[i][2]))+"\n")
+                for line in frames[i]:
+                    fn.write(line)
+                fn.close()
+                
+# def mergepdb(f):
+#     frames=[]
+#     for i in f:
+#         fn=open(i, 'r')
+#         lines = fn.readlines()
+#         for line in lines:
+#             frames.append(line)
+#         fn.close()
+#     fo = open("")
+#     for i in frames
