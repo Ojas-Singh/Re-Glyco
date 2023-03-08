@@ -11,19 +11,20 @@ from sklearn.cluster import KMeans,SpectralCoclustering,SpectralClustering,DBSCA
 
 def normalizetorsion(df):
     tor = df.loc[:, df.columns!='i'].to_numpy()
-    tor=tor.T
+    torxy=[]
     for angle in range(len(tor)): 
+        torr=[]
         x = 0
         y = 0
         for i in tor[angle]:
             x += np.cos(np.deg2rad(i))
             y += np.sin(np.deg2rad(i))
-        average_angle = np.arctan2(y, x)
-        # print(average_angle)
         for i in range(len(tor[angle])):
-            tor[angle][i]=np.arctan(np.tan(np.deg2rad(tor[angle][i])-average_angle))
-    tor=tor.T
-    return tor
+            torr.append(x)
+            torr.append(y)
+        torxy.append(torr)
+    torxy = np.asarray(torxy)
+    return torxy
 
 def pcawithT(tor,dim):
     pca = PCA(n_components=dim)
@@ -71,16 +72,6 @@ def pcawithG(frames,idx_noH,dim):
     plt.tight_layout()
     plt.savefig('output/PCA_variance.png',dpi=450)
     return PCA_components
-
-def pcawithGNB(frames,graph,dim):
-    G = np.zeros((len(frames),int(len(frames[0][np.asarray(idx_noH,dtype=int)])*(len(frames[0][np.asarray(idx_noH,dtype=int)])+1)/2)))
-    for i in range(len(frames)):
-        G[i]= graph.G_flatten(frames[i][np.asarray(idx_noH,dtype=int)])
-    pca = PCA(n_components=dim)
-    t = pca.fit_transform(G)
-    PCA_components = pd.DataFrame(t)
-    return PCA_components
-
 
 
 def tsnewithG(frames,idx_noH,dim):

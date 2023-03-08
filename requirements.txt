@@ -8,3 +8,5 @@ stmol==0.0.7
 st-annotated-text
 scikit-learn
 networkx
+plotly
+matplotlib

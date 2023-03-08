@@ -6,16 +6,16 @@ from scipy import stats
 
 
 
-name="bisecting"
+name="glycan"
 f=config.data_dir+name+"/"+name+".dry.pdb"
 
 pdbdata, frames = pdb.multi(f)
 df = pdb.to_DF(pdbdata)
 
 
-idx_noH=df.loc[(df['Element']!="H"),['Number']].iloc[:]['Number']-1
-pcaG= clustering.pcawithG(frames,idx_noH,config.number_of_dimensions)
-pcaG.to_csv(config.data_dir+name+"/"+name+'_G_pca_NB.csv',index_label="i")
+# idx_noH=df.loc[(df['Element']!="H"),['Number']].iloc[:]['Number']-1
+# pcaG= clustering.pcawithG(frames,idx_noH,config.number_of_dimensions)
+# pcaG.to_csv(config.data_dir+name+"/"+name+'_G_pca_NB.csv',index_label="i")
 
 # tsneG = clustering.tsnewithG(frames,idx_noH,config.number_of_dimensions)
 # tsneG.to_csv(config.data_dir+name+"/"+name+'_G_tsne.csv',index_label="i")  
@@ -29,29 +29,29 @@ for i in range(len(internal)):
     torsion_names.append("internal")
 
 torsiondataDF= dihedral.pairstotorsion(pairs,frames,torsion_names)
-torsiondataDF.to_csv(config.data_dir+name+"/"+name+'_torsions.csv',index_label="i")
+torsiondataDF.to_csv(config.data_dir+name+"/"+name+'_torsions_full.csv',index_label="i")
 
 # df = df[(np.abs(stats.zscore(df.loc[:, df.columns!='i'])) < 3)]
-# k=0
-# outliers=[]
-# ok=[]
-# for i in np.asarray(np.abs(stats.zscore(ext_DF)) < 2,dtype=bool):
-#     p=True
-#     for j in i:
-#         if not j:
-#             p=False
-#     if p :
-#         ok.append(k)
-#     else:
-#         outliers.append(k)
-#     k+=1
-# print("Outliers : ",len(outliers), "Total points : ",len(ext_DF.iloc[:]))
-# ext_DF["cluster"]=["0" for x in range(len(ext_DF.iloc[:]))]
-# ext_DF["cluster"][outliers]=str(-1)
+k=0
+outliers=[]
+ok=[]
+for i in np.asarray(np.abs(stats.zscore(ext_DF)) < 2,dtype=bool):
+    p=True
+    for j in i:
+        if not j:
+            p=False
+    if p :
+        ok.append(k)
+    else:
+        outliers.append(k)
+    k+=1
+print("Outliers : ",len(outliers), "Total points : ",len(ext_DF.iloc[:]))
+ext_DF["cluster"]=["0" for x in range(len(ext_DF.iloc[:]))]
+ext_DF["cluster"][outliers]=str(-1)
 
-# exDF_clean = ext_DF.loc[ext_DF["cluster"]!="-1"]
-# exDF = exDF_clean.loc[:, exDF_clean .columns!='cluster']
-# print(len(ok))
+exDF_clean = ext_DF.loc[ext_DF["cluster"]!="-1"]
+exDF = exDF_clean.loc[:, exDF_clean .columns!='cluster']
+print(len(ok))
 
 
 # tor=clustering.normalizetorsion(exDF)
@@ -64,7 +64,7 @@ torsiondataDF.to_csv(config.data_dir+name+"/"+name+'_torsions.csv',index_label="
 # tsneT.to_csv(config.data_dir+name+"/"+name+'_T_tsne.csv',index_label=False) 
 
 
-# exDF.to_csv(config.data_dir+name+"/"+name+'_torsions.csv',index_label="i")
+exDF.to_csv(config.data_dir+name+"/"+name+'_torsions.csv',index_label="i")
 
 
 

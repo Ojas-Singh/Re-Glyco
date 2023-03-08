@@ -27,7 +27,7 @@ f="data/"+name+"/"+name
 
 molrep = st.selectbox('Molecular Data : ',("Graph","Torsions"))
 if molrep == "Graph":
-    pca_df = pd.read_csv(f+"_G_pca_20.csv")
+    pca_df = pd.read_csv(f+"_G_pca.csv")
     tsne_df = pd.read_csv(f+"_G_tsne.csv")
     df = pd.read_csv(config.data_dir+ "/"+ name +"/"+ name+ '_torsions_full.csv')
 else:

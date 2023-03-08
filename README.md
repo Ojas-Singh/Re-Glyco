@@ -5,9 +5,9 @@ The Python software utilizes molecular dynamics (MD) simulation results from the
 
 # Installation
 ```
-conda install -n reglyco python=3.10
+conda create -n reglyco python=3.10
 conda activate reglyco
-python -m pip install -r requirements.txt
+pip install -r requirements.txt
 streamlit run main.py
 ```
 
@@ -25,4 +25,22 @@ sudo iptables -P INPUT ACCEPT
 sudo iptables -P OUTPUT ACCEPT
 sudo iptables -P FORWARD ACCEPT
 sudo iptables -F
+sudo ufw 22
+sudo ufw 80
+sudo ufw 8080
+sudo ufw 443
 sudo ufw enable
+
+
+localhost/loopback
+
+sudo iptables -t nat -I OUTPUT -p tcp -d 127.0.0.1 --dport 80 -j REDIRECT --to-ports 3000
+
+external
+
+sudo iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports 3000
+
+screen -S name
+screen -r name
+ctr a + d   -> to detach
+pkill screen
