@@ -1,1 +1,1 @@
-__all__ = ["prep","algo","pdb","dihedral","graph","tfindr","clustering"]
+__all__ = ["prep","algo","pdb","dihedral","graph","tfindr","clustering","molview", "genetic"]

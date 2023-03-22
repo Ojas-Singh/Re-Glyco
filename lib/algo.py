@@ -9,6 +9,7 @@ import streamlit as st
 import math
 import os
 import config
+import glycors
 
 @njit(fastmath=True,parallel=True)
 def eucl_opt(A, B):
@@ -135,7 +136,7 @@ def opt(CB,CG,ND2,C1,C2,Garr,Parr,phisd,psisd):
     phif=0
     psif=0
     r=1000000000000000
-    for pp in range(200):
+    for pp in range(1000):
         # phi = np.random.normal(-97.5, 33)
         # psi = np.random.normal(178, 26)
         phi = np.random.uniform(phisd[0],phisd[1])
@@ -177,7 +178,7 @@ def attach(protein,glycans,glycosylation_locations,phisd,psisd):
         torsionpoints = loaded["a"]
         torsionparts  = loaded["b"]
         clash= False
-        Garr = optwithwiggle(Garr,O1,CB,CG,ND2,C1,C2,Parr,torsionpoints,torsionparts,np.asarray(phisd),np.asarray(psisd))
+        Garr = optwithwiggle(Garr,O1,CB,CG,ND2,C1,C2,Parr,torsionpoints,torsionparts,phisd,psisd)
         c = eucl_opt(Garr, Parr)
         c = c[3:][:]
         con1 = c<1.6
@@ -197,13 +198,13 @@ def attach(protein,glycans,glycosylation_locations,phisd,psisd):
 
     return glycoprotein_final,clash
 
-@njit(fastmath=True)
+# @njit(fastmath=True)
 def optwithwiggle(GarrM,O1,CB,CG,ND2,C1,C2,Parr,torsionpoints,torsionparts,phisd,psisd):
         r = 100000000
         GarrF= GarrM
         phiF=0
         psiF=0
-        for i in range(20):
+        for i in range(1):
             Garr = Garrfromtorsion(GarrM,torsionpoints,torsionparts)
             Garr = Garr-Garr[O1]
             Garr = Garr + Parr[ND2]
@@ -215,7 +216,11 @@ def optwithwiggle(GarrM,O1,CB,CG,ND2,C1,C2,Parr,torsionpoints,torsionparts,phisd
             for i in range(len(Garr)):
                 Garr[i] = np.dot(M0,Garr[i])
             Garr = Garr + Parr[ND2]
-            phi,psi,ri =opt(CB,CG,ND2,C1,C2,Garr,Parr,phisd,psisd)
+            # phi,psi,ri =opt(CB,CG,ND2,C1,C2,Garr,Parr,phisd,psisd)
+            # phi,psi,ri = n.genetic_algorithm_opt(CB, CG, ND2, C1, C2, Garr, Parr, phisd, psisd, population_size=100, generations=30, mutation_rate=0.2)
+            # phi,psi,ri = glycors.opt(CB,CG,ND2,C1,C2,Garr,Parr,tuple(phisd),tuple(psisd))
+            # print(tuple(phisd),tuple(psisd))
+            phi,psi,ri = glycors.opt_genetic(CB,CG,ND2,C1,C2,Garr,Parr,(-130,-63),(152,205))
             if ri<r:
                 GarrF= Garr
                 phiF=phi

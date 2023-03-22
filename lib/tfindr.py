@@ -5,20 +5,41 @@ import networkx as nx
 import config
 
 
+def parse_mol2_bonds(file_path):
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+
+    # Find the start and end line numbers for the BOND section
+    bond_start = -1
+    bond_end = -1
+    for i, line in enumerate(lines):
+        if line.strip() == "@<TRIPOS>BOND":
+            bond_start = i + 1
+        elif bond_start != -1 and line.strip().startswith("@<TRIPOS>"):
+            bond_end = i
+            break
+
+    if bond_start == -1:
+        raise ValueError("No @<TRIPOS>BOND section found in the mol2 file.")
+
+    if bond_end == -1:
+        bond_end = len(lines)
+
+    # Extract bonded atom pairs from the BOND section
+    bonded_atoms = []
+    for line in lines[bond_start:bond_end]:
+        _, atom1, atom2, _ = line.strip().split()
+        bonded_atoms.append((int(atom1), int(atom2)))
+
+    return bonded_atoms
+
+
 def savetotorparts(name):
     f=config.data_dir+name+"/"+name+".pdb"
     f2 = config.data_dir+name+"/"+"graph"
     pdbdata = pdb.parse(f)
     df = pdb.to_DF(pdbdata)
-    connect =[]
-    with open(f2, 'r') as f:
-                lines = f.readlines()
-                i=1
-                for line in lines:
-                    a = int((line[8:13]).strip(" "))
-                    b = int((line[13:19]).strip(" "))
-                    connect.append((a,b))
-
+    connect = parse_mol2_bonds(f2)
     G = nx.Graph()
     G.add_edges_from(connect)
     H_list = df.loc[(df['Element']=="H"),['Number']].iloc[:]['Number']

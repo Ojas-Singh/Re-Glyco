@@ -1,16 +1,11 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
-from lib import prep,algo,pdb
-import py3Dmol
+from lib import prep,algo,pdb,molview
+import py3Dmol,time,os,config
 from stmol import showmol
 from PIL import Image
-import time
 from io import StringIO
-import io
 from annotated_text import annotated_text
-import os
-import config
+
 
 st.set_page_config(page_title="Re-GLyco", page_icon=None, layout="wide", initial_sidebar_state="auto", menu_items=None)
 
@@ -31,7 +26,7 @@ uni_id = st.sidebar.text_input(
 st.sidebar.write("Or upload PDB manually.")
 uploaded_file = st.sidebar.file_uploader("")
 
-@st.cache
+@st.cache_data
 def fetch(uni_id):
     fold = prep.download_and_prepare_alphafoldDB_model(uni_id,"output/temp/")
     out= prep.query_uniprot_for_glycosylation_locations(uni_id)
@@ -54,25 +49,13 @@ if not uni_id=="" and uploaded_file is None:
         with tab1:
             col1, col2 = st.columns(2)
             with col1:
+                try:
+                    molview.show3d(fold,system,confidence,glycosylation_locations)
+                except:
+                    molview.normalshow3d(fold,system,confidence,glycosylation_locations)
+                    # pass
                 protein = pdb.parse(fold)
-                xyzview = py3Dmol.view()
-                xyzview.addModelsAsFrames(system)
-                colors = ["#FF7D45" for x in range(50)]+["#FFDB13" for x in range(20)]+["#65CBF3" for x in range(20)]+["#0053D6" for x in range(15)]
-                xyzview.setStyle({'cartoon':{'color':'grey'}})
-                for resid in range(len(confidence)):
-                    xyzview.addStyle({"chain": "A", "resi": str(resid+1)},
-                                    {"cartoon": {"color":colors[int(confidence[resid])]}})
-                xyzview.addSurface(py3Dmol.VDW, {"opacity": 0.4, "color": "lightgrey"},{"hetflag": False})
-                for i in range(len(glycosylation_locations)):
-                    xyzview.addStyle({"chain": "A", "resi": glycosylation_locations[i]["begin"], "elem": "C"},
-                                    {"stick": {"color": colors[int(confidence[int(glycosylation_locations[i]["begin"])-1])], "radius":  0.2}})
-                    xyzview.addStyle({"chain": "A", "resi": glycosylation_locations[i]["begin"]},
-                                        {"stick": {"radius":  0.4}})    
-                    xyzview.addResLabels({"chain": "A","resi": glycosylation_locations[i]["begin"]},
-                    {"backgroundColor": "lightgray","fontColor": "purple","backgroundOpacity": 0.5})
-                xyzview.setBackgroundColor('#FFFFFF')
-                xyzview.zoomTo()
-                showmol(xyzview,height=400,width=800)
+                
             with col2:
                 btn = st.download_button(
                         label="Download AlphaFold Structure",
@@ -127,27 +110,7 @@ if not uni_id=="" and uploaded_file is None:
                     st.balloons()
                     st.success("exec time : "+ str(int(time.time()-s)) +" seconds")
                     g1 = pdb.exportPDB('output/out.pdb',pdb.to_normal(g))
-                    xyzview1 = py3Dmol.view()
-                    xyzview1.addModelsAsFrames(g1)
-                    for n,chain,color in zip(range(len(glycosylation_locations)+1),list("ABCDEFGH"),
-                                                ["grey","#FF7B89","#8A5082","#6F5F90","#758EB7","#A5CAD2","blue","orange"]):
-                                    if chain=="A":
-                                        xyzview1.setStyle({'chain':chain},{'stick': {"opacity": 0.6,'color':color,"radius":  0.2}})
-                                        xyzview1.addSurface(py3Dmol.VDW, {"opacity": 0.4, "color": "lightgrey"},{"hetflag": False})
-                                    else:
-                                        xyzview1.setStyle({'chain':chain},{'stick': {'color':color, "radius":  0.4}})
-                    for resid in range(len(confidence)):
-                        xyzview1.addStyle({"chain": "A", "resi": str(resid+1)},
-                                        {"stick": {"color":colors[int(confidence[resid])], "radius":  0.4}})
-                    for i in range(len(glycosylation_locations)):
-                        xyzview1.addStyle({"chain": "A", "resi": glycosylation_locations[i]["begin"], "elem": "C"},
-                                        {"stick": {"color": "red", "radius":  0.2}})
-
-                        xyzview1.addStyle({"chain": "A", "resi": glycosylation_locations[i]["begin"]},
-                                            {"stick": {"radius":  0.4}})
-                    xyzview1.setBackgroundColor('#FFFFFF')
-                    xyzview1.zoomTo()
-                    showmol(xyzview1,height=400,width=1100)
+                    molview.show3doutput(g1,glycosylation_locations,confidence)
                     done=True
             with open('output/out.pdb') as ofile:
                 system = "".join([x for x in ofile])
@@ -162,8 +125,8 @@ if not uni_id=="" and uploaded_file is None:
             if st.button('Process',key="process"):
                 st.write('')
                 s=time.time()
-                phisd=(-130,-64)
-                psisd=(152,204)
+                phisd=(-130,-63)
+                psisd=(152,205)
                 with st.spinner('Processing...'):
                     g,clash = algo.attach(protein,glycans,glycosylation_locations_N,phisd,psisd)
                 if clash:
@@ -172,27 +135,7 @@ if not uni_id=="" and uploaded_file is None:
                 st.balloons()
                 st.success("exec time : "+ str(int(time.time()-s)) +" seconds")
                 g1 = pdb.exportPDB('output/out.pdb',pdb.to_normal(g))
-                xyzview1 = py3Dmol.view()
-                xyzview1.addModelsAsFrames(g1)
-                for n,chain,color in zip(range(len(glycosylation_locations)+1),list("ABCDEFGH"),
-                                            ["grey","#FF7B89","#8A5082","#6F5F90","#758EB7","#A5CAD2","blue","orange"]):
-                                if chain=="A":
-                                    xyzview1.setStyle({'chain':chain},{'stick': {"opacity": 0.6,'color':color,"radius":  0.2}})
-                                    xyzview1.addSurface(py3Dmol.VDW, {"opacity": 0.4, "color": "lightgrey"},{"hetflag": False})
-                                else:
-                                    xyzview1.setStyle({'chain':chain},{'stick': {'color':color, "radius":  0.4}})
-                for resid in range(len(confidence)):
-                    xyzview1.addStyle({"chain": "A", "resi": str(resid+1)},
-                                    {"stick": {"color":colors[int(confidence[resid])], "radius":  0.4}})
-                for i in range(len(glycosylation_locations)):
-                    xyzview1.addStyle({"chain": "A", "resi": glycosylation_locations[i]["begin"], "elem": "C"},
-                                    {"stick": {"color": "red", "radius":  0.2}})
-
-                    xyzview1.addStyle({"chain": "A", "resi": glycosylation_locations[i]["begin"]},
-                                        {"stick": {"radius":  0.4}})
-                xyzview1.setBackgroundColor('#FFFFFF')
-                xyzview1.zoomTo()
-                showmol(xyzview1,height=400,width=1100)
+                molview.show3doutput(g1,glycosylation_locations,confidence)
                 with open('output/out.pdb') as ofile:
                     system = "".join([x for x in ofile])
                     btn = st.download_button(
@@ -255,7 +198,7 @@ elif uploaded_file is not None:
             st.write('')
             s=time.time()
             with st.spinner('Processing...'):
-                g,clash = algo.attach(protein,glycans,glycosylation_locations,free)
+                g,clash = algo.attach(protein,glycans,glycosylation_locations)
             if clash:
                  st.warning('Clash detected, rerun or the spot is not glycosylable, [low confidence region near spot.]  ')
             
@@ -297,4 +240,5 @@ else:
     st.markdown("O15552")
     st.markdown("P29016")
     st.markdown("Q9BXJ4")
+    #B0YJ81
 

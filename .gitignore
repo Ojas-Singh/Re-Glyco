@@ -7,3 +7,5 @@ data/*
 .ipynb_checkpoints
 ignore
 docs
+glycors/target/*
+glycors/Cargo.lock
