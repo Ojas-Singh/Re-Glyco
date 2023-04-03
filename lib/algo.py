@@ -118,6 +118,27 @@ def steric_fast(Garr,Parr):
     return r
 
 @njit(fastmath=True)
+def Garrfromtorsion(Garr,torsionpoints,torsionparts):
+    for i in range(len(torsionpoints)):
+            M1 = rotation_matrix(Garr[torsionpoints[i][2]]-Garr[torsionpoints[i][1]],np.radians(random.uniform(-10, 10)))
+            Garr = Garr-Garr[torsionpoints[i][1]]
+            for j in np.where(torsionparts[i])[0]:
+                Garr[j] = np.dot(M1,Garr[j])
+            Garr = Garr+Garr[torsionpoints[i][1]]
+    return Garr
+
+@njit(fastmath=True)
+def Garrfromtorsiondemo(Garr,torsionpoints,torsionrange,torsionparts):
+    for i in range(len(torsionpoints)):
+            M1 = rotation_matrix(Garr[torsionpoints[i][2]]-Garr[torsionpoints[i][1]],np.radians(random.uniform(-1*torsionrange, torsionrange)))
+            Garr = Garr-Garr[torsionpoints[i][1]]
+            for j in np.where(torsionparts[i])[0]:
+                Garr[j] = np.dot(M1,Garr[j])
+            Garr = Garr+Garr[torsionpoints[i][1]]
+    return Garr
+
+
+@njit(fastmath=True)
 def rr(phi,psi,CB,CG,ND2,C1,C2,Garr,Parr):
     M1 = rotation_matrix(Parr[ND2]-Parr[CG],np.radians(phi-fastest_dihedral(Parr[CB],Parr[CG],Parr[ND2],Garr[C1])))
     Garr = Garr - Parr[ND2]
@@ -131,27 +152,9 @@ def rr(phi,psi,CB,CG,ND2,C1,C2,Garr,Parr):
     Garr = Garr + Parr[ND2]
     return Garr
 
-@njit(fastmath=True)
-def opt(CB,CG,ND2,C1,C2,Garr,Parr,phisd,psisd):
-    phif=0
-    psif=0
-    r=1000000000000000
-    for pp in range(1000):
-        # phi = np.random.normal(-97.5, 33)
-        # psi = np.random.normal(178, 26)
-        phi = np.random.uniform(phisd[0],phisd[1])
-        psi = np.random.uniform(psisd[0],psisd[1])
-        Garr = rr(phi,psi,CB,CG,ND2,C1,C2,Garr,Parr)
-        ri= steric_fast(Garr,Parr)
-        if ri<r:
-            phif= phi
-            psif= psi
-            r=ri
-    return phif,psif,r
-
 def sampling(Glycanid):
     G = pdb.parse(config.data_dir+Glycanid+"/"+Glycanid+".pdb")
-    loaded = np.load(config.data_dir+Glycanid+"/"+Glycanid+"_torparts.npz",allow_pickle=True)
+    loaded = np.load(config.data_dir+Glycanid+"/output/torparts.npz",allow_pickle=True)
     return pdb.to_DF(G),loaded
 
 def attach(protein,glycans,glycosylation_locations,phisd,psisd):
@@ -198,7 +201,7 @@ def attach(protein,glycans,glycosylation_locations,phisd,psisd):
 
     return glycoprotein_final,clash
 
-# @njit(fastmath=True)
+
 def optwithwiggle(GarrM,O1,CB,CG,ND2,C1,C2,Parr,torsionpoints,torsionparts,phisd,psisd):
         r = 100000000
         GarrF= GarrM
@@ -216,34 +219,11 @@ def optwithwiggle(GarrM,O1,CB,CG,ND2,C1,C2,Parr,torsionpoints,torsionparts,phisd
             for i in range(len(Garr)):
                 Garr[i] = np.dot(M0,Garr[i])
             Garr = Garr + Parr[ND2]
-            # phi,psi,ri =opt(CB,CG,ND2,C1,C2,Garr,Parr,phisd,psisd)
-            # phi,psi,ri = n.genetic_algorithm_opt(CB, CG, ND2, C1, C2, Garr, Parr, phisd, psisd, population_size=100, generations=30, mutation_rate=0.2)
             # phi,psi,ri = glycors.opt(CB,CG,ND2,C1,C2,Garr,Parr,tuple(phisd),tuple(psisd))
-            # print(tuple(phisd),tuple(psisd))
-            phi,psi,ri = glycors.opt_genetic(CB,CG,ND2,C1,C2,Garr,Parr,(-130,-63),(152,205))
+            phi,psi,ri = glycors.opt_genetic(CB,CG,ND2,C1,C2,Garr,Parr,phisd,psisd)
             if ri<r:
                 GarrF= Garr
                 phiF=phi
                 psiF=psi
         return rr(phiF,psiF,CB,CG,ND2,C1,C2,GarrF,Parr)
-
-@njit(fastmath=True)
-def Garrfromtorsion(Garr,torsionpoints,torsionparts):
-    for i in range(len(torsionpoints)):
-            M1 = rotation_matrix(Garr[torsionpoints[i][2]]-Garr[torsionpoints[i][1]],np.radians(random.uniform(-10, 10)))
-            Garr = Garr-Garr[torsionpoints[i][1]]
-            for j in np.where(torsionparts[i])[0]:
-                Garr[j] = np.dot(M1,Garr[j])
-            Garr = Garr+Garr[torsionpoints[i][1]]
-    return Garr
-
-@njit(fastmath=True)
-def Garrfromtorsiondemo(Garr,torsionpoints,torsionrange,torsionparts):
-    for i in range(len(torsionpoints)):
-            M1 = rotation_matrix(Garr[torsionpoints[i][2]]-Garr[torsionpoints[i][1]],np.radians(random.uniform(-1*torsionrange, torsionrange)))
-            Garr = Garr-Garr[torsionpoints[i][1]]
-            for j in np.where(torsionparts[i])[0]:
-                Garr[j] = np.dot(M1,Garr[j])
-            Garr = Garr+Garr[torsionpoints[i][1]]
-    return Garr
 

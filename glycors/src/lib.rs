@@ -163,8 +163,8 @@ pub fn opt_genetic(
     phisd: (f64, f64),
     psisd: (f64, f64),
 ) -> PyResult<(f64, f64, f64)> {
-    let population_size = 50;
-    let generations = 100;
+    let population_size = 100;
+    let generations = 20;
     let mutation_rate = 0.1;
     let mut rng = rand::thread_rng();
     if phisd.0 >= phisd.1 || psisd.0 >= psisd.1 {
