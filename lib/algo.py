@@ -207,7 +207,7 @@ def optwithwiggle(GarrM,O1,CB,CG,ND2,C1,C2,Parr,torsionpoints,torsionparts,phisd
         GarrF= GarrM
         phiF=0
         psiF=0
-        for i in range(1):
+        for i in range(20):
             Garr = Garrfromtorsion(GarrM,torsionpoints,torsionparts)
             Garr = Garr-Garr[O1]
             Garr = Garr + Parr[ND2]
@@ -225,5 +225,7 @@ def optwithwiggle(GarrM,O1,CB,CG,ND2,C1,C2,Parr,torsionpoints,torsionparts,phisd
                 GarrF= Garr
                 phiF=phi
                 psiF=psi
+            if ri==1.0:
+                break
         return rr(phiF,psiF,CB,CG,ND2,C1,C2,GarrF,Parr)
 
