@@ -1,3 +1,20 @@
+# Important!
+ASN-NAG
+
+From Privateer 
+Target Phi = -97.5, target Psi = 178
+
+Need Verification.
+Psi = O5 C1 ND2 CG
+
+Phi = C1 ND2 CG CB
+
+
+To-do
+1. Clean code with phi psi flex
+2. Write a test for AlphaFold
+3. Write a flip attach
+
 
 # Installation
 
@@ -54,3 +71,11 @@ screen -S name
 screen -r name
 ctr a + d   -> to detach
 pkill screen
+
+
+
+
+
+Spot : 151 Psi : 160 Phi : -92
+
+Spot : 167 Psi : 154 Phi : -105

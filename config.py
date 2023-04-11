@@ -1,1 +1,2 @@
-data_dir = "../glycoshape_data/"
+data_dir = "../../glycoshape_data/"
+

@@ -109,7 +109,7 @@ fn rr(
     cg: usize,
     nd2: usize,
     c1: usize,
-    c2: usize,
+    o5: usize,
     garr: &mut Vec<Vec<f64>>,
     parr: &Vec<Vec<f64>>,
 ) {
@@ -131,7 +131,7 @@ fn rr(
         }
     }
 
-    let rad_psi = PI / 180.0 * (psi - fastest_dihedral(&parr[cg], &parr[nd2], &garr[c1], &garr[c2]));
+    let rad_psi = PI / 180.0 * (psi - fastest_dihedral(&parr[cg], &parr[nd2], &garr[c1], &garr[o5]));
     let m2 = rotation_matrix(&subtract(&garr[c1], &parr[nd2]), rad_psi);
 
     for row in garr.iter_mut() {
@@ -157,7 +157,7 @@ pub fn opt_genetic(
     cg: usize,
     nd2: usize,
     c1: usize,
-    c2: usize,
+    o5: usize,
     garr: Vec<Vec<f64>>,
     parr: Vec<Vec<f64>>,
     phisd: (f64, f64),
@@ -189,7 +189,7 @@ pub fn opt_genetic(
             .iter()
             .map(|&(phi, psi)| {
                 let mut garr_temp = garr.clone();
-                rr(phi, psi, cb, cg, nd2, c1, c2, &mut garr_temp, &parr);
+                rr(phi, psi, cb, cg, nd2, c1, o5, &mut garr_temp, &parr);
                 steric_fast(&garr_temp, &parr)
             })
             .collect();
@@ -282,7 +282,7 @@ pub fn opt(
     cg: usize,
     nd2: usize,
     c1: usize,
-    c2: usize,
+    o5: usize,
     garr: Vec<Vec<f64>>,
     parr: Vec<Vec<f64>>,
     phisd: (f64, f64),
@@ -299,7 +299,7 @@ pub fn opt(
         let phi = phi_range.sample(&mut rng);
         let psi = psi_range.sample(&mut rng);
         let mut garr_temp = garr.clone();
-        rr(phi, psi, cb, cg, nd2, c1, c2, &mut garr_temp, &parr);
+        rr(phi, psi, cb, cg, nd2, c1, o5, &mut garr_temp, &parr);
         let ri = steric_fast(&garr_temp, &parr);
         if ri < r {
             phif = phi;

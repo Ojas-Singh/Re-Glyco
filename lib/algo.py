@@ -7,7 +7,7 @@ from numba import njit
 import numba as nb
 import streamlit as st
 import math
-import os
+import os,time
 import config
 import glycors
 
@@ -139,29 +139,39 @@ def Garrfromtorsiondemo(Garr,torsionpoints,torsionrange,torsionparts):
 
 
 @njit(fastmath=True)
-def rr(phi,psi,CB,CG,ND2,C1,C2,Garr,Parr):
+def rr(phi,psi,CB,CG,ND2,C1,O5,Garr,Parr):
     M1 = rotation_matrix(Parr[ND2]-Parr[CG],np.radians(phi-fastest_dihedral(Parr[CB],Parr[CG],Parr[ND2],Garr[C1])))
     Garr = Garr - Parr[ND2]
     for i in range(len(Garr)):
         Garr[i] = np.dot(M1,Garr[i])
     Garr = Garr + Parr[ND2]
-    M2 = rotation_matrix(Garr[C1]-Parr[ND2],np.radians(psi-fastest_dihedral(Parr[CG],Parr[ND2],Garr[C1],Garr[C2])))
+    M2 = rotation_matrix(Garr[C1]-Parr[ND2],np.radians(psi-fastest_dihedral(Parr[CG],Parr[ND2],Garr[C1],Garr[O5])))
     Garr = Garr - Parr[ND2]
     for i in range(len(Garr)):
         Garr[i] = np.dot(M2,Garr[i])
     Garr = Garr + Parr[ND2]
     return Garr
 
+
+def get_number_after_underscore(filename):
+    return float(filename.split("_")[1].split(".")[0])
+
 def sampling(Glycanid):
-    G = pdb.parse(config.data_dir+Glycanid+"/"+Glycanid+".pdb")
+    folder_path = config.data_dir+Glycanid+"/clusters/beta/"
+    filenames = os.listdir(folder_path)
+    pdb_files = [filename for filename in filenames if filename.endswith(".pdb")]
+    sorted_pdb_files = sorted(pdb_files, key=get_number_after_underscore,reverse=True)
+    all_pdbs=[]
+    for i in sorted_pdb_files:
+        all_pdbs.append(pdb.to_DF(pdb.parse(folder_path+i)))
     loaded = np.load(config.data_dir+Glycanid+"/output/torparts.npz",allow_pickle=True)
-    return pdb.to_DF(G),loaded
+    return all_pdbs,loaded
 
 def attach(protein,glycans,glycosylation_locations,phisd,psisd):
     protein_df= pdb.to_DF(protein)
     Parr=protein_df[['X','Y','Z']].to_numpy(dtype=float)
     glycoprotein_final = copy.deepcopy(protein_df)
-    gly=[]
+    timer=[]
     ChainId= ["B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
     k=0
     for i in range(len(glycosylation_locations)):
@@ -172,25 +182,42 @@ def attach(protein,glycans,glycosylation_locations,phisd,psisd):
         CB = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'CB'),['Number']].iloc[0]['Number'] -1
         CG = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'CG'),['Number']].iloc[0]['Number'] -1
         ND2 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'ND2'),['Number']].iloc[0]['Number'] -1
-        G,loaded = sampling(glycans[i])
+        all_G,loaded = sampling(glycans[i])
+        G = all_G[0]
         C1 = G.loc[(G['ResId']==2) & (G['Name']== 'C1'),['Number']].iloc[0]['Number'] -1
-        C2 = G.loc[(G['ResId']==2) & (G['Name']== 'C2'),['Number']].iloc[0]['Number'] -1
+        O5 = G.loc[(G['ResId']==2) & (G['Name']== 'O5'),['Number']].iloc[0]['Number'] -1
         O1 = G.loc[(G['ResId']==1) & (G['Name']== 'O1'),['Number']].iloc[0]['Number'] -1
         Garr = G[['X','Y','Z']].to_numpy(dtype=float)
-        Garr_dummy = G[['X','Y','Z']].to_numpy(dtype=float)
         torsionpoints = loaded["a"]
         torsionparts  = loaded["b"]
         clash= False
-        Garr = optwithwiggle(Garr,O1,CB,CG,ND2,C1,C2,Parr,torsionpoints,torsionparts,phisd,psisd)
-        c = eucl_opt(Garr, Parr)
-        c = c[3:][:]
-        con1 = c<1.6
-        c2 = np.extract(con1, c)
-        if np.sum(c2)> 0:
-            print(np.sum(c2))
-            clash=True     
-        st.write("Spot : ",target_ResId," Phi : ",int(fastest_dihedral(Parr[CB],Parr[CG],Parr[ND2],Garr[C1]))," Psi : ",int(fastest_dihedral(Parr[CG],Parr[ND2],Garr[C1],Garr[C2])))
-        Gn =  pd.DataFrame(Garr, columns = ['X','Y','Z'])
+        # Garr = optwithwiggle(Garr,O1,CB,CG,ND2,C1,O5,Parr,torsionpoints,torsionparts,phisd,psisd)
+        # c = eucl_opt(Garr, Parr)
+        # c = c[3:][:]
+        # con1 = c<1.6
+        # c2 = np.extract(con1, c)
+        # if np.sum(c2)> 0:
+        #     print(np.sum(c2))
+        #     clash=True     
+        s=time.time()
+
+        FGarr= Garr
+        rf=100000000
+        for Gi in all_G:
+            Garr = Gi[['X','Y','Z']].to_numpy(dtype=float)
+            Garr,r = optwithwiggle(Garr,O1,CB,CG,ND2,C1,O5,Parr,torsionpoints,torsionparts,phisd,psisd)
+            if r<rf:
+                FGarr=Garr
+                rf=r
+            if r==1.0:
+                print("wow!")
+                st.write("Solved!")
+                break
+            else:
+                st.write("Trying different cluster...")
+        timer.append(time.time()-s)
+        st.write("Spot : ",target_ResId," Psi : ",int(fastest_dihedral(Parr[CB],Parr[CG],Parr[ND2],FGarr[C1]))," Phi : ",int(fastest_dihedral(Parr[CG],Parr[ND2],FGarr[C1],FGarr[O5])))
+        Gn =  pd.DataFrame(FGarr, columns = ['X','Y','Z'])
         G.update(Gn)
         G = G.drop([0,1])
         G["Number"] = glycoprotein_final["Number"].iloc[-1] + G["Number"] 
@@ -202,7 +229,7 @@ def attach(protein,glycans,glycosylation_locations,phisd,psisd):
     return glycoprotein_final,clash
 
 
-def optwithwiggle(GarrM,O1,CB,CG,ND2,C1,C2,Parr,torsionpoints,torsionparts,phisd,psisd):
+def optwithwiggle(GarrM,O1,CB,CG,ND2,C1,O5,Parr,torsionpoints,torsionparts,phisd,psisd):
         r = 100000000
         GarrF= GarrM
         phiF=0
@@ -219,13 +246,14 @@ def optwithwiggle(GarrM,O1,CB,CG,ND2,C1,C2,Parr,torsionpoints,torsionparts,phisd
             for i in range(len(Garr)):
                 Garr[i] = np.dot(M0,Garr[i])
             Garr = Garr + Parr[ND2]
-            # phi,psi,ri = glycors.opt(CB,CG,ND2,C1,C2,Garr,Parr,tuple(phisd),tuple(psisd))
-            phi,psi,ri = glycors.opt_genetic(CB,CG,ND2,C1,C2,Garr,Parr,phisd,psisd)
+            # phi,psi,ri = glycors.opt(CB,CG,ND2,C1,O5,Garr,Parr,tuple(phisd),tuple(psisd))
+            phi,psi,ri = glycors.opt_genetic(CB,CG,ND2,C1,O5,Garr,Parr,psisd,phisd)
             if ri<r:
                 GarrF= Garr
                 phiF=phi
                 psiF=psi
+                r=ri
             if ri==1.0:
                 break
-        return rr(phiF,psiF,CB,CG,ND2,C1,C2,GarrF,Parr)
+        return rr(phiF,psiF,CB,CG,ND2,C1,O5,GarrF,Parr),r
 
