@@ -9,5 +9,5 @@ ignore
 docs
 glycors/target
 glycors/Cargo.lock
-AF2_test
+
 experimental
