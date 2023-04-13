@@ -10,3 +10,4 @@ scikit-learn
 networkx
 plotly
 matplotlib
+maturin

@@ -26,6 +26,8 @@ conda create -n reglyco python=3.10
 conda activate reglyco
 pip install -r requirements.txt
 
+sudo apt install build-essential
+
 cd glycors
 maturin develop --release
 cd ..
