@@ -21,7 +21,7 @@ psisd=(152,205)
 
 test_glycans=[
     "DGalpb1-4DGlcpNAcb1-2DManpa1-3[DGalpb1-4DGlcpNAc[6S]b1-2DManpa1-6]DManpb1-4DGlcpNAcb1-4[LFucpa1-6]DGlcpNAca1-OH",
-
+    "DNeup5Gca2-6DGalpb1-4DGlcpNAcb1-2DManpa1-3[DGlcpNAcb1-2DManpa1-6]DManpb1-4DGlcpNAcb1-4DGlcpNAca1-OH"
 ]
 
 def attach_single(protein,glycan,target_ResId,phisd,psisd):
