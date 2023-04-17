@@ -25,27 +25,6 @@ def show3d(fold,system,confidence,glycosylation_locations):
     xyzview.zoomTo()
     showmol(xyzview,height=400,width=800)
 
-@st.cache_data
-def normalshow3d(fold,system,confidence,glycosylation_locations):
-    protein = pdb.parse(fold)
-    xyzview = py3Dmol.view()
-    xyzview.addModelsAsFrames(system)
-    colors = ["#FF7D45" for x in range(50)]+["#FFDB13" for x in range(20)]+["#65CBF3" for x in range(20)]+["#0053D6" for x in range(15)]
-    xyzview.setStyle({'cartoon':{'color':'grey'}})
-    for resid in range(len(confidence)):
-        xyzview.addStyle({"chain": "A", "resi": str(resid+1)},
-                        {"cartoon": {"color":colors[int(confidence[resid])]}})
-    xyzview.addSurface(py3Dmol.VDW, {"opacity": 0.4, "color": "lightgrey"},{"hetflag": False})
-    for i in range(len(glycosylation_locations)):
-        xyzview.addStyle({"chain": "A", "resi": glycosylation_locations[i]["begin"]},
-                            {"stick": {"radius":  0.4}})    
-        xyzview.addResLabels({"chain": "A","resi": glycosylation_locations[i]["begin"]},
-        {"backgroundColor": "lightgray","fontColor": "purple","backgroundOpacity": 0.5})
-    xyzview.setBackgroundColor('#FFFFFF')
-    xyzview.zoomTo()
-    showmol(xyzview,height=400,width=800)
-
-
 
 def show3doutput(g1,glycosylation_locations,confidence):
     colors = ["#FF7D45" for x in range(50)]+["#FFDB13" for x in range(20)]+["#65CBF3" for x in range(20)]+["#0053D6" for x in range(15)]
