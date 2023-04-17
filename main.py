@@ -41,7 +41,7 @@ if not uni_id=="" and uploaded_file is None:
         lines = system.split("\n")
         for x in lines:
             if x.startswith("ATOM"):
-                if int((x[23:27]).strip(" "))==p:
+                if int((x[22:27]).strip(" "))==p:
                     confidence.append(float((x[61:67]).strip(" ")))
                     p+=1
         tab1, tab2 = st.tabs(["Structure", "glycosylations"])
@@ -49,11 +49,7 @@ if not uni_id=="" and uploaded_file is None:
         with tab1:
             col1, col2 = st.columns(2)
             with col1:
-                try:
-                    molview.show3d(fold,system,confidence,glycosylation_locations)
-                except:
-                    molview.normalshow3d(fold,system,confidence,glycosylation_locations)
-                    # pass
+                molview.show3d(fold,system,confidence,glycosylation_locations)
                 protein = pdb.parse(fold)
                 
             with col2:

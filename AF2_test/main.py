@@ -80,33 +80,33 @@ with open('important_test.txt', "r") as f:
     content = f.readlines()
     print(len(content))
     for uni_id in content:
-        # try:
-        fold, out = fetch(uni_id.strip("\n"))
-        with open(fold) as ifile:
-            system = "".join([x for x in ifile])
-            protein = pdb.parse(fold)
-            confidence= []
-            p=1
-            lines = system.split("\n")
-            for x in lines:
-                if x.startswith("ATOM"):
-                    if int((x[23:27]).strip(" "))==p:
-                        confidence.append(float((x[61:68]).strip(" ")))
-                        p+=1
-            glycosylation_locations = out["glycosylations"]
-            glycosylation_locations_N=[]
-            for i in range(len(glycosylation_locations)):
-                if not glycosylation_locations[i]["description"].startswith('N-linked'):
-                    pass
-                else:
-                    glycosylation_locations_N.append(glycosylation_locations[i])
-            dirlist = [ item for item in os.listdir(config.data_dir) if os.path.isdir(os.path.join(config.data_dir, item)) ]
-            for target in glycosylation_locations_N:
-                target_ResId= int(target["begin"])
-                for k in test_glycans:
-                    g,clash,timer = attach_single(protein,k,target_ResId,phisd,psisd)
-                    append_to_results("result.txt", uni_id, target_ResId,confidence[target_ResId], timer,clash,k)
-                    g1 = pdb.exportPDB('output/'+str(uni_id.strip("\n"))+"_"+str(target_ResId)+"_"+str(k)+".pdb",pdb.to_normal(g))
-        # except:
-        #     print(uni_id)
-        #     pass
+        try:
+            fold, out = fetch(uni_id.strip("\n"))
+            with open(fold) as ifile:
+                system = "".join([x for x in ifile])
+                protein = pdb.parse(fold)
+                confidence= []
+                p=1
+                lines = system.split("\n")
+                for x in lines:
+                    if x.startswith("ATOM"):
+                        if int((x[22:27]).strip(" "))==p:
+                            confidence.append(float((x[61:68]).strip(" ")))
+                            p+=1
+                glycosylation_locations = out["glycosylations"]
+                glycosylation_locations_N=[]
+                for i in range(len(glycosylation_locations)):
+                    if not glycosylation_locations[i]["description"].startswith('N-linked'):
+                        pass
+                    else:
+                        glycosylation_locations_N.append(glycosylation_locations[i])
+                dirlist = [ item for item in os.listdir(config.data_dir) if os.path.isdir(os.path.join(config.data_dir, item)) ]
+                for target in glycosylation_locations_N:
+                    target_ResId= int(target["begin"])
+                    for k in test_glycans:
+                        g,clash,timer = attach_single(protein,k,target_ResId,phisd,psisd)
+                        append_to_results("result.txt", uni_id, target_ResId,confidence[target_ResId], timer,clash,k)
+                        g1 = pdb.exportPDB('output/'+str(uni_id.strip("\n"))+"_"+str(target_ResId)+"_"+str(k)+".pdb",pdb.to_normal(g))
+        except:
+            print(uni_id)
+            pass

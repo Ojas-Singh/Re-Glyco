@@ -5,9 +5,11 @@ From Privateer
 Target Phi = -97.5, target Psi = 178
 
 Need Verification.
-Psi = O5 C1 ND2 CG
+Phi = O5 C1 ND2 CG
+        CG-ND2-C1-O5
 
-Phi = C1 ND2 CG CB
+Psi = C1 ND2 CG CB
+        CB-CG-ND2-C1
 
 
 To-do
