@@ -1,4 +1,42 @@
 # Important!
+
+O-Glycan
+DNeup5Aca2-3DGalpb1-3[DNeup5Aca2-3DGalpb1-4DGlcpNAcb1-6]DGalpNAca1-OH
+
+N-Glycan
+DManpb1-4DGlcpNAcb1-4DGlcpNAca1-OH
+
+C-Man
+
+
+
+P27918
+
+"C-linked (Man) tryptophan"
+alpha
+TRP
+139
+
+
+"N-linked (GlcNAc...) (complex) asparagine"
+beta
+ASN
+428
+
+
+"O-linked (Fuc...) threonine"
+alpha
+THR
+151
+
+
+"O-linked (Fuc...) serine"
+alpha
+SER
+208
+
+
+
 ASN-NAG
 
 From Privateer 

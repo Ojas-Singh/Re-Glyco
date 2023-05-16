@@ -152,6 +152,59 @@ fn rr(
 }
 
 #[pyfunction]
+fn adjust_dihedrals(
+    phi: f64,
+    psi: f64,
+    cb: usize,
+    cg: usize,
+    nd2: usize,
+    c1: usize,
+    o5: usize,
+    garr_input: Vec<Vec<f64>>,
+    parr_input: Vec<Vec<f64>>,
+) -> PyResult<Vec<Vec<f64>>>  {
+    let mut garr = garr_input.clone();
+    let parr = parr_input.clone();
+    let rad_phi = PI / 180.0 * (phi - fastest_dihedral(&parr[cb], &parr[cg], &parr[nd2], &garr[c1]));
+    let m1 = rotation_matrix(&subtract(&parr[nd2], &parr[cg]), rad_phi);
+
+    for row in garr.iter_mut() {
+        for i in 0..row.len() {
+            row[i] -= parr[nd2][i];
+        }
+    }
+    for row in garr.iter_mut() {
+        let new_row = matrix_multiply(&m1,&row);
+        *row = new_row;
+    }
+    for row in garr.iter_mut() {
+        for i in 0..row.len() {
+            row[i] += parr[nd2][i];
+        }
+    }
+
+    let rad_psi = PI / 180.0 * (psi - fastest_dihedral(&parr[cg], &parr[nd2], &garr[c1], &garr[o5]));
+    let m2 = rotation_matrix(&subtract(&garr[c1], &parr[nd2]), rad_psi);
+
+    for row in garr.iter_mut() {
+        for i in 0..row.len() {
+            row[i] -= parr[nd2][i];
+        }
+    }
+    for row in garr.iter_mut() {
+        let new_row = matrix_multiply(&m2,&row);
+        *row = new_row;
+    }
+    
+    for row in garr.iter_mut() {
+        for i in 0..row.len() {
+            row[i] += parr[nd2][i];
+        }
+    }
+    Ok(garr)
+}
+
+#[pyfunction]
 pub fn opt_genetic(
     cb: usize,
     cg: usize,
@@ -163,8 +216,8 @@ pub fn opt_genetic(
     phisd: (f64, f64),
     psisd: (f64, f64),
 ) -> PyResult<(f64, f64, f64)> {
-    let population_size = 100;
-    let generations = 20;
+    let population_size = 200;
+    let generations = 10;
     let mutation_rate = 0.1;
     let mut rng = rand::thread_rng();
     if phisd.0 >= phisd.1 || psisd.0 >= psisd.1 {
@@ -332,6 +385,27 @@ fn rotation_matrix(axis: &Vec<f64>, theta: f64) -> Vec<Vec<f64>> {
     ]
 }
 
+#[pyfunction]
+fn rotation_mat(axis: Vec<f64>, theta: f64) -> PyResult<Vec<Vec<f64>>> {
+    let axis_norm = {
+        let len = (axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]).sqrt();
+        [axis[0] / len, axis[1] / len, axis[2] / len]
+    };
+    let (a, b, c, d) = (
+        (theta / 2.0).cos(),
+        -axis_norm[0] * (theta / 2.0).sin(),
+        -axis_norm[1] * (theta / 2.0).sin(),
+        -axis_norm[2] * (theta / 2.0).sin(),
+    );
+    let (aa, bb, cc, dd) = (a * a, b * b, c * c, d * d);
+    let (bc, ad, ac, ab, bd, cd) = (b * c, a * d, a * c, a * b, b * d, c * d);
+    Ok(vec![
+        vec![aa + bb - cc - dd, 2.0 * (bc + ad), 2.0 * (bd - ac)],
+        vec![2.0 * (bc - ad), aa + cc - bb - dd, 2.0 * (cd + ab)],
+        vec![2.0 * (bd + ac), 2.0 * (cd - ab), aa + dd - bb - cc],
+    ])
+}
+
 
 fn fastest_dihedral(p0: &Vec<f64>, p1: &Vec<f64>, p2: &Vec<f64>, p3: &Vec<f64>) -> f64 {
     let b1 = vec![
@@ -379,6 +453,8 @@ fn fastest_angle(p0: &Vec<f64>, p1: &Vec<f64>, p2: &Vec<f64>) -> f64 {
 fn glycors(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(opt))?; // Fix: Remove the '?' inside the parentheses
     m.add_wrapped(wrap_pyfunction!(opt_genetic))?;
+    m.add_wrapped(wrap_pyfunction!(adjust_dihedrals))?;
+    m.add_wrapped(wrap_pyfunction!(rotation_mat))?;
     Ok(())
 }
 

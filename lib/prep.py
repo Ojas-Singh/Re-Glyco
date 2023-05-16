@@ -5,7 +5,13 @@ import argparse
 import requests
 import warnings
 import json
+import streamlit as st
 
+@st.cache_data
+def fetch(uni_id):
+    fold = download_and_prepare_alphafoldDB_model(uni_id,"output/temp/")
+    out= query_uniprot_for_glycosylation_locations(uni_id)
+    return fold,out
 
 def download_and_prepare_alphafoldDB_model(uniprotID, downloadLocation):
     outputFileName = uniprotID + ".pdb"
