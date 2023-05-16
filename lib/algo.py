@@ -57,8 +57,12 @@ def optwithwiggle(GarrM,O1,CB,CG,ND2,C1,O5,Parr,torsionpoints,torsionparts,phisd
 def get_number_after_underscore(filename):
     return float(filename.split("_")[1].split(".")[0])
 
-def sampling(Glycanid):
-    folder_path = config.data_dir+Glycanid+"/clusters/beta/"
+def sampling(Glycanid,linkage):
+    folder_path = ""
+    if linkage == "alpha":
+        folder_path = config.data_dir+Glycanid+"/clusters/alpha/"
+    elif linkage == "beta":
+        folder_path = config.data_dir+Glycanid+"/clusters/beta/"
     filenames = os.listdir(folder_path)
     pdb_files = [filename for filename in filenames if filename.endswith(".pdb")]
     sorted_pdb_files = sorted(pdb_files, key=get_number_after_underscore,reverse=True)
@@ -89,7 +93,7 @@ def attach(protein,glycans,glycosylation_locations):
             if glycans[i] == "None":
                 continue
             else:
-                all_G,loaded = sampling(glycans[i])
+                all_G,loaded = sampling(glycans[i],"alpha")
                 G = all_G[0]
                 C1 = G.loc[(G['ResId']==2) & (G['Name']== 'C1'),['Number']].iloc[0]['Number'] -1
                 O5 = G.loc[(G['ResId']==2) & (G['Name']== 'O5'),['Number']].iloc[0]['Number'] -1
@@ -136,7 +140,7 @@ def attach(protein,glycans,glycosylation_locations):
             if glycans[i] == "None":
                 continue
             else:
-                all_G,loaded = sampling(glycans[i])
+                all_G,loaded = sampling(glycans[i],"beta")
                 G = all_G[0]
                 C1 = G.loc[(G['ResId']==2) & (G['Name']== 'C1'),['Number']].iloc[0]['Number'] -1
                 O5 = G.loc[(G['ResId']==2) & (G['Name']== 'O5'),['Number']].iloc[0]['Number'] -1
