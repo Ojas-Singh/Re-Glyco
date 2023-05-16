@@ -87,8 +87,8 @@ def attach(protein,glycans,glycosylation_locations):
         if protein_df.loc[(protein_df['ResId'] == target_ResId), 'ResName'].iloc[0] in config.O_linked["Res"]:
             psisd = config.O_linked["psi"]
             phisd = config.O_linked["phi"]
-            CB = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'CB'),['Number']].iloc[0]['Number'] -1
-            CG = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'CA'),['Number']].iloc[0]['Number'] -1
+            CB = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'CA'),['Number']].iloc[0]['Number'] -1
+            CG = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'CB'),['Number']].iloc[0]['Number'] -1
             ND2 = protein_df.loc[(protein_df['ResId']==target_ResId) & ((protein_df['Name']== 'OG1')|(protein_df['Name']== 'OG')),['Number']].iloc[0]['Number'] -1
             if glycans[i] == "None":
                 continue
