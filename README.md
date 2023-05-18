@@ -1,59 +1,15 @@
-# Important!
+# Information
 
-O-Glycan
-DNeup5Aca2-3DGalpb1-3[DNeup5Aca2-3DGalpb1-4DGlcpNAcb1-6]DGalpNAca1-OH
+N-linked
+Phi = CG-ND2-C1-O5
+Psi = CB-CG-ND2-C1
 
-N-Glycan
-DManpb1-4DGlcpNAcb1-4DGlcpNAca1-OH
+O-linked
+Phi = CB-OG1-C1-O5
+Psi = CA-CB-OG1-C1
 
-C-Man
-
-
-
-P27918
-
-"C-linked (Man) tryptophan"
-alpha
-TRP
-139
-
-
-"N-linked (GlcNAc...) (complex) asparagine"
-beta
-ASN
-428
-
-
-"O-linked (Fuc...) threonine"
-alpha
-THR
-151
-
-
-"O-linked (Fuc...) serine"
-alpha
-SER
-208
-
-
-
-ASN-NAG
-
-From Privateer 
-Target Phi = -97.5, target Psi = 178
-
-Need Verification.
-Phi = O5 C1 ND2 CG
-        CG-ND2-C1-O5
-
-Psi = C1 ND2 CG CB
-        CB-CG-ND2-C1
-
-
-To-do
-1. Clean code with phi psi flex
-2. Write a test for AlphaFold
-3. Write a flip attach
+C-linked
+Phi = CG-CD1-C1-O5
 
 
 # Installation
@@ -89,6 +45,7 @@ python main.py
 
 
 # things for oracle for Hosting Websites
+```
 sudo iptables -P INPUT ACCEPT
 sudo iptables -P OUTPUT ACCEPT
 sudo iptables -P FORWARD ACCEPT
@@ -98,26 +55,20 @@ sudo ufw allow 80
 sudo ufw allow 8080
 sudo ufw allow 443
 sudo ufw enable
-
+```
 
 localhost/loopback
-
+```
 sudo iptables -t nat -I OUTPUT -p tcp -d 127.0.0.1 --dport 80 -j REDIRECT --to-ports 3000
-
+```
 external
-
+```
 sudo iptables -t nat -I PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports 3000
-
-
+```
+```
 screen -S name
 screen -r name
 ctr a + d   -> to detach
 pkill screen
 
-
-
-
-
-Spot : 151 Psi : 160 Phi : -92
-
-Spot : 167 Psi : 154 Phi : -105
+```

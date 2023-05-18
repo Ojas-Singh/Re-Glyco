@@ -5,6 +5,12 @@ from PIL import Image
 from io import StringIO
 from annotated_text import annotated_text
 
+def get_glycan_list(suffix):
+    directory = config.data_dir
+    folders = [folder for folder in os.listdir(directory) if os.path.isdir(os.path.join(directory, folder)) and folder.endswith(suffix)]
+    folders.append("None")
+    return folders
+
 
 st.set_page_config(page_title="Re-GLyco", page_icon='icon.png', layout="wide", initial_sidebar_state="auto", menu_items=None)
 
@@ -58,19 +64,31 @@ if not uni_id=="" and uploaded_file is None:
         glycans=[1 for x in range(len(glycosylation_locations))]
         glycosylation_locations_N=[]
         for i in range(len(glycosylation_locations)):
-            if not (glycosylation_locations[i]["description"].startswith('N-linked') or glycosylation_locations[i]["description"].startswith('O-linked')):
+            if not (glycosylation_locations[i]["description"].startswith('N-linked') or glycosylation_locations[i]["description"].startswith('O-linked') or glycosylation_locations[i]["description"].startswith('C-linked')):
                 st.warning(f"Only N & O glycosylation supported, location : {glycosylation_locations[i]['begin']}  is {glycosylation_locations[i]['description']}")
             else:
                 glycosylation_locations_N.append(glycosylation_locations[i])
-        dirlist = [ item for item in os.listdir(config.data_dir) if os.path.isdir(os.path.join(config.data_dir, item)) ]
-        dirlist.append("None")
+        dirlist_N = get_glycan_list("DGlcpNAca1-OH")
+        dirlist_O = get_glycan_list("DGalpNAca1-OH")
+        dirlist_C = get_glycan_list("DManpa1-OH")
         for i in range(len(glycosylation_locations_N)): 
             df = pdb.to_DF(protein)
             resname = df.loc[df['ResId'] == int(glycosylation_locations_N[i]["begin"]), 'ResName'].iloc[0]
-            options = st.selectbox(
-                        f'Which glycans to attach on location : {resname}{glycosylation_locations_N[i]["begin"]} ?',
-                        (dirlist),key=str(i))
-            glycans[i]=options
+            if resname in config.N_linked["Res"]:
+                options = st.selectbox(
+                            f'Which glycans to attach on location : {resname}{glycosylation_locations_N[i]["begin"]} ?',
+                            (dirlist_N),key=str(i))
+                glycans[i]=options
+            elif resname in config.O_linked["Res"]: 
+                options = st.selectbox(
+                            f'Which glycans to attach on location : {resname}{glycosylation_locations_N[i]["begin"]} ?',   
+                            (dirlist_O),key=str(i))
+                glycans[i]=options
+            elif resname in config.C_linked["Res"]:
+                options = st.selectbox(
+                            f'Which glycans to attach on location : {resname}{glycosylation_locations_N[i]["begin"]} ?',   
+                            (dirlist_C),key=str(i))
+                glycans[i]=options
         if st.button('Process',key="process"):
             s=time.time()
             with st.spinner('Processing...'):
@@ -108,15 +126,28 @@ elif uploaded_file is not None:
     spots,
     )
     glycans=[1 for x in range(len(glycosylation_locations))]
-    dirlist = [ item for item in os.listdir(config.data_dir) if os.path.isdir(os.path.join(config.data_dir, item)) ]
-    dirlist.append("None")
     df = pdb.to_DF(protein)
-    for i in range(len(glycosylation_locations)):
+    dirlist_N = get_glycan_list("DGlcpNAca1-OH")
+    dirlist_O = get_glycan_list("DGalpNAca1-OH")
+    dirlist_C = get_glycan_list("DManpa1-OH")
+    for i in range(len(glycosylation_locations)): 
+        df = pdb.to_DF(protein)
         resname = df.loc[df['ResId'] == int(glycosylation_locations[i]), 'ResName'].iloc[0]
-        options = st.selectbox(
-                    f'Which glycans to attach on location : {resname}{glycosylation_locations[i]} ?' ,
-                    (dirlist),key=str(i))
-        glycans[i]=options
+        if resname in config.N_linked["Res"]:
+            options = st.selectbox(
+                        f'Which glycans to attach on location : {resname}{glycosylation_locations[i]} ?',
+                        (dirlist_N),key=str(i))
+            glycans[i]=options
+        elif resname in config.O_linked["Res"]: 
+            options = st.selectbox(
+                        f'Which glycans to attach on location : {resname}{glycosylation_locations[i]} ?',   
+                        (dirlist_O),key=str(i))
+            glycans[i]=options
+        elif resname in config.C_linked["Res"]:
+            options = st.selectbox(
+                        f'Which glycans to attach on location : {resname}{glycosylation_locations[i]} ?',   
+                        (dirlist_C),key=str(i))
+            glycans[i]=options
     if st.button('Process',key="process"):
             s=time.time()
             with st.spinner('Processing...'):

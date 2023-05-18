@@ -178,6 +178,53 @@ def attach(protein,glycans,glycosylation_locations):
                 k+=1
                 glycoprotein_final= pd.concat([glycoprotein_final,G])
                 Parr=glycoprotein_final[['X','Y','Z']].to_numpy(dtype=float)
+        if protein_df.loc[(protein_df['ResId'] == target_ResId), 'ResName'].iloc[0] in config.C_linked["Res"]:
+            psisd = config.C_linked["psi"]
+            phisd = config.C_linked["phi"]
+            CB = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'CB'),['Number']].iloc[0]['Number'] -1
+            CG = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'CG'),['Number']].iloc[0]['Number'] -1
+            ND2 = protein_df.loc[(protein_df['ResId']==target_ResId) & (protein_df['Name']== 'CD1'),['Number']].iloc[0]['Number'] -1
+            if glycans[i] == "None":
+                continue
+            else:
+                all_G,loaded = sampling(glycans[i],"alpha")
+                G = all_G[0]
+                C1 = G.loc[(G['ResId']==2) & (G['Name']== 'C1'),['Number']].iloc[0]['Number'] -1
+                O5 = G.loc[(G['ResId']==2) & (G['Name']== 'O5'),['Number']].iloc[0]['Number'] -1
+                O1 = G.loc[(G['ResId']==1) & (G['Name']== 'O1'),['Number']].iloc[0]['Number'] -1
+                Garr = G[['X','Y','Z']].to_numpy(dtype=float)
+                torsionpoints = loaded["a"]
+                torsionparts  = loaded["b"]
+                clash= True 
+                s=time.time()
+                box = st.empty()
+                FGarr= Garr
+                rf=100000000
+                box.info(f"Trying cluster 1/{len(all_G)}...")
+                for (clus_num,Gi) in enumerate(all_G):
+                    Garr = Gi[['X','Y','Z']].to_numpy(dtype=float)
+                    Garr,r,phi,psi = optwithwiggle(Garr,O1,CB,CG,ND2,C1,O5,Parr,torsionpoints,torsionparts,phisd,psisd)
+                    if r<rf:
+                        FGarr=Garr
+                        rf=r
+                    if r==1.0:
+                        clash=False
+                        box.info(f"Clash Solved for {glycans[i]} at ASN :{target_ResId} with phi : {int(phi)} and psi : {int(psi)}")
+                        break
+                    else:
+                        box.info(f"Clash detected, trying cluster {clus_num+2}/{len(all_G)}...")
+                if clash:
+                    box.warning(f"Clash exist for {glycans[i]} at ASN :{target_ResId} with phi : {int(phi)} and psi : {int(psi)}")
+
+                timer.append(time.time()-s)
+                Gn =  pd.DataFrame(FGarr, columns = ['X','Y','Z'])
+                G.update(Gn)
+                G = G.drop([0,1])
+                G["Number"] = glycoprotein_final["Number"].iloc[-1] + G["Number"] 
+                G["Chain"] = ChainId[k]
+                k+=1
+                glycoprotein_final= pd.concat([glycoprotein_final,G])
+                Parr=glycoprotein_final[['X','Y','Z']].to_numpy(dtype=float)
 
     return glycoprotein_final,clash
 
