@@ -8,7 +8,6 @@ from annotated_text import annotated_text
 def get_glycan_list(suffix):
     directory = config.data_dir
     folders = [folder for folder in os.listdir(directory) if os.path.isdir(os.path.join(directory, folder)) and folder.endswith(suffix)]
-    folders.append("None")
     return folders
 
 
@@ -68,9 +67,9 @@ if not uni_id=="" and uploaded_file is None:
                 st.warning(f"Only N & O glycosylation supported, location : {glycosylation_locations[i]['begin']}  is {glycosylation_locations[i]['description']}")
             else:
                 glycosylation_locations_N.append(glycosylation_locations[i])
-        dirlist_N = get_glycan_list("DGlcpNAca1-OH") + get_glycan_list("DGlcpNAcb1-OH")
-        dirlist_O = get_glycan_list("DGalpNAca1-OH") + get_glycan_list("DGalpNAcb1-OH")
-        dirlist_C = get_glycan_list("DManpa1-OH") + get_glycan_list("DManpb1-OH")
+        dirlist_N = ["none"] + get_glycan_list("DGlcpNAca1-OH") + get_glycan_list("DGlcpNAcb1-OH")
+        dirlist_O = ["none"] + get_glycan_list("DGalpNAca1-OH") + get_glycan_list("DGalpNAcb1-OH")
+        dirlist_C = ["none"] + get_glycan_list("DManpa1-OH") + get_glycan_list("DManpb1-OH")
         for i in range(len(glycosylation_locations_N)): 
             df = pdb.to_DF(protein)
             resname = df.loc[df['ResId'] == int(glycosylation_locations_N[i]["begin"]), 'ResName'].iloc[0]
@@ -127,9 +126,9 @@ elif uploaded_file is not None:
     )
     glycans=[1 for x in range(len(glycosylation_locations))]
     df = pdb.to_DF(protein)
-    dirlist_N = get_glycan_list("DGlcpNAca1-OH")
-    dirlist_O = get_glycan_list("DGalpNAca1-OH")
-    dirlist_C = get_glycan_list("DManpa1-OH")
+    dirlist_N = ["none"] + get_glycan_list("DGlcpNAca1-OH") + get_glycan_list("DGlcpNAcb1-OH")
+    dirlist_O = ["none"] + get_glycan_list("DGalpNAca1-OH") + get_glycan_list("DGalpNAcb1-OH")
+    dirlist_C = ["none"] + get_glycan_list("DManpa1-OH") + get_glycan_list("DManpb1-OH")
     for i in range(len(glycosylation_locations)): 
         df = pdb.to_DF(protein)
         resname = df.loc[df['ResId'] == int(glycosylation_locations[i]), 'ResName'].iloc[0]
