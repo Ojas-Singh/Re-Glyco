@@ -68,9 +68,9 @@ if not uni_id=="" and uploaded_file is None:
                 st.warning(f"Only N & O glycosylation supported, location : {glycosylation_locations[i]['begin']}  is {glycosylation_locations[i]['description']}")
             else:
                 glycosylation_locations_N.append(glycosylation_locations[i])
-        dirlist_N = get_glycan_list("DGlcpNAca1-OH")
-        dirlist_O = get_glycan_list("DGalpNAca1-OH")
-        dirlist_C = get_glycan_list("DManpa1-OH")
+        dirlist_N = get_glycan_list("DGlcpNAca1-OH") + get_glycan_list("DGlcpNAcb1-OH")
+        dirlist_O = get_glycan_list("DGalpNAca1-OH") + get_glycan_list("DGalpNAcb1-OH")
+        dirlist_C = get_glycan_list("DManpa1-OH") + get_glycan_list("DManpb1-OH")
         for i in range(len(glycosylation_locations_N)): 
             df = pdb.to_DF(protein)
             resname = df.loc[df['ResId'] == int(glycosylation_locations_N[i]["begin"]), 'ResName'].iloc[0]

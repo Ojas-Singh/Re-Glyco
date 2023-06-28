@@ -16,9 +16,9 @@ def fastest_angle(p0,p1,p2):
     angle = np.arccos(cosine_angle)
     return np.degrees(angle)
 
-def Garrfromtorsion(Garr,torsionpoints,torsionparts):
+def Garrfromtorsion(Garr,torsionpoints,torsionparts,factor):
     for i in range(len(torsionpoints)):
-            M1 = glycors.rotation_mat(Garr[torsionpoints[i][2]]-Garr[torsionpoints[i][1]],np.radians(random.uniform(-10, 10)))
+            M1 = glycors.rotation_mat(Garr[torsionpoints[i][2]]-Garr[torsionpoints[i][1]],np.radians(random.uniform(-10*factor, 10*factor)))
             Garr = Garr-Garr[torsionpoints[i][1]]
             for j in np.where(torsionparts[i])[0]:
                 Garr[j] = np.dot(M1,Garr[j])
@@ -26,31 +26,74 @@ def Garrfromtorsion(Garr,torsionpoints,torsionparts):
     return Garr
 
 
-def optwithwiggle(GarrM,O1,CB,CG,ND2,C1,O5,Parr,torsionpoints,torsionparts,phisd,psisd):
+def optwithwiggle(GarrM,O1,CB,CG,ND2,C1,O5,Parr,torsionpoints,torsionparts,phisd,psisd,wiggle_tries,wiggle_method):
         r = 100000000
         GarrF= GarrM
         phiF=0
         psiF=0
-        for i in range(20):
-            Garr = Garrfromtorsion(GarrM,torsionpoints,torsionparts)
-            Garr = Garr-Garr[O1]
-            Garr = Garr + Parr[ND2]
-            axis = np.cross(Parr[CG]-Parr[ND2],Garr[C1]-Parr[ND2])
-            an=fastest_angle(Parr[CG],Parr[ND2],Garr[C1])
-            theta = np.radians(random.uniform(130, 110) - an)
-            Garr = Garr - Parr[ND2]
-            M0 = glycors.rotation_mat(axis, theta)
-            for i in range(len(Garr)):
-                Garr[i] = np.dot(M0,Garr[i])
-            Garr = Garr + Parr[ND2]
-            phi,psi,ri = glycors.opt_genetic(CB,CG,ND2,C1,O5,Garr,Parr,psisd,phisd)
-            if ri<r:
-                GarrF= Garr
-                phiF=phi
-                psiF=psi
-                r=ri
-            if ri==1.0:
-                break
+        if wiggle_method =="none":
+            for i in range(wiggle_tries):
+                Garr = Garrfromtorsion(GarrM,torsionpoints,torsionparts,factor=(i/wiggle_tries))
+                Garr = Garr-Garr[O1]
+                Garr = Garr + Parr[ND2]
+                axis = np.cross(Parr[CG]-Parr[ND2],Garr[C1]-Parr[ND2])
+                an=fastest_angle(Parr[CG],Parr[ND2],Garr[C1])
+                theta = np.radians(random.uniform(130, 110) - an)
+                Garr = Garr - Parr[ND2]
+                M0 = glycors.rotation_mat(axis, theta)
+                for i in range(len(Garr)):
+                    Garr[i] = np.dot(M0,Garr[i])
+                Garr = Garr + Parr[ND2]
+                phi,psi,ri = glycors.opt_genetic(CB,CG,ND2,C1,O5,Garr,Parr,psisd,phisd)
+                if ri<r:
+                    GarrF= Garr
+                    phiF=phi
+                    psiF=psi
+                    r=ri
+                if ri==1.0:
+                    break
+        elif wiggle_method=="progressive_random":
+            for i in range(wiggle_tries):
+                Garr = Garrfromtorsion(GarrM,torsionpoints,torsionparts,factor=(i/wiggle_tries))
+                Garr = Garr-Garr[O1]
+                Garr = Garr + Parr[ND2]
+                axis = np.cross(Parr[CG]-Parr[ND2],Garr[C1]-Parr[ND2])
+                an=fastest_angle(Parr[CG],Parr[ND2],Garr[C1])
+                theta = np.radians(random.uniform(130, 110) - an)
+                Garr = Garr - Parr[ND2]
+                M0 = glycors.rotation_mat(axis, theta)
+                for i in range(len(Garr)):
+                    Garr[i] = np.dot(M0,Garr[i])
+                Garr = Garr + Parr[ND2]
+                phi,psi,ri = glycors.opt_genetic(CB,CG,ND2,C1,O5,Garr,Parr,psisd,phisd)
+                if ri<r:
+                    GarrF= Garr
+                    phiF=phi
+                    psiF=psi
+                    r=ri
+                if ri==1.0:
+                    break
+        elif wiggle_method=="random":
+            for i in range(wiggle_tries):
+                Garr = Garrfromtorsion(GarrM,torsionpoints,torsionparts,factor=(i/wiggle_tries))
+                Garr = Garr-Garr[O1]
+                Garr = Garr + Parr[ND2]
+                axis = np.cross(Parr[CG]-Parr[ND2],Garr[C1]-Parr[ND2])
+                an=fastest_angle(Parr[CG],Parr[ND2],Garr[C1])
+                theta = np.radians(random.uniform(130, 110) - an)
+                Garr = Garr - Parr[ND2]
+                M0 = glycors.rotation_mat(axis, theta)
+                for i in range(len(Garr)):
+                    Garr[i] = np.dot(M0,Garr[i])
+                Garr = Garr + Parr[ND2]
+                phi,psi,ri = glycors.opt_genetic(CB,CG,ND2,C1,O5,Garr,Parr,psisd,phisd)
+                if ri<r:
+                    GarrF= Garr
+                    phiF=phi
+                    psiF=psi
+                    r=ri
+                if ri==1.0:
+                    break
         return glycors.adjust_dihedrals(phiF,psiF,CB,CG,ND2,C1,O5,GarrF,Parr),r,phiF,psiF
 
 
@@ -105,11 +148,27 @@ def attach(protein,glycans,glycosylation_locations):
                 s=time.time()
                 box = st.empty()
                 FGarr= Garr
+                cluster_best = 0
                 rf=100000000
                 box.info(f"Trying cluster 1/{len(all_G)}...")
                 for (clus_num,Gi) in enumerate(all_G):
                     Garr = Gi[['X','Y','Z']].to_numpy(dtype=float)
-                    Garr,r,phi,psi = optwithwiggle(Garr,O1,CB,CG,ND2,C1,O5,Parr,torsionpoints,torsionparts,phisd,psisd)
+                    Garr,r,phi,psi = optwithwiggle(Garr,O1,CB,CG,ND2,C1,O5,Parr,torsionpoints,torsionparts,phisd,psisd,wiggle_tries=1,wiggle_method="none")
+                    if r<rf:
+                        FGarr=Garr
+                        rf=r
+                        cluster_best = clus_num
+                    if r==1.0:
+                        clash=False
+                        box.info(f"Clash Solved for {glycans[i]} at ASN :{target_ResId} with phi : {int(phi)} and psi : {int(psi)}")
+                        break
+                    else:
+                        box.info(f"Clash detected, trying cluster {clus_num+2}/{len(all_G)}...")
+                if rf != 1.0:
+                    box.info(f"Clash detected, trying cluster {cluster_best+1}/{len(all_G)} with wiggle...")
+                    Gi = all_G[cluster_best]
+                    Garr = Gi[['X','Y','Z']].to_numpy(dtype=float)
+                    Garr,r,phi,psi = optwithwiggle(Garr,O1,CB,CG,ND2,C1,O5,Parr,torsionpoints,torsionparts,phisd,psisd,wiggle_tries=40,wiggle_method="progressive_random")
                     if r<rf:
                         FGarr=Garr
                         rf=r
@@ -118,7 +177,7 @@ def attach(protein,glycans,glycosylation_locations):
                         box.info(f"Clash Solved for {glycans[i]} at ASN :{target_ResId} with phi : {int(phi)} and psi : {int(psi)}")
                         break
                     else:
-                        box.info(f"Clash detected, trying cluster {clus_num+2}/{len(all_G)}...")
+                        box.info(f"Clash detected, trying cluster {clus_num+2}/{len(all_G)} with wiggle...")
                 if clash:
                     box.warning(f"Clash exist for {glycans[i]} at ASN :{target_ResId} with phi : {int(phi)} and psi : {int(psi)}")
 
@@ -156,7 +215,22 @@ def attach(protein,glycans,glycosylation_locations):
                 box.info(f"Trying cluster 1/{len(all_G)}...")
                 for (clus_num,Gi) in enumerate(all_G):
                     Garr = Gi[['X','Y','Z']].to_numpy(dtype=float)
-                    Garr,r,phi,psi = optwithwiggle(Garr,O1,CB,CG,ND2,C1,O5,Parr,torsionpoints,torsionparts,phisd,psisd)
+                    Garr,r,phi,psi = optwithwiggle(Garr,O1,CB,CG,ND2,C1,O5,Parr,torsionpoints,torsionparts,phisd,psisd,wiggle_tries=1,wiggle_method="none")
+                    if r<rf:
+                        FGarr=Garr
+                        rf=r
+                        cluster_best = clus_num
+                    if r==1.0:
+                        clash=False
+                        box.info(f"Clash Solved for {glycans[i]} at ASN :{target_ResId} with phi : {int(phi)} and psi : {int(psi)}")
+                        break
+                    else:
+                        box.info(f"Clash detected, trying cluster {clus_num+2}/{len(all_G)}...")
+                if rf != 1.0:
+                    box.info(f"Clash detected, trying cluster {cluster_best+1}/{len(all_G)} with wiggle...")
+                    Gi = all_G[cluster_best]
+                    Garr = Gi[['X','Y','Z']].to_numpy(dtype=float)
+                    Garr,r,phi,psi = optwithwiggle(Garr,O1,CB,CG,ND2,C1,O5,Parr,torsionpoints,torsionparts,phisd,psisd,wiggle_tries=40,wiggle_method="progressive_random")
                     if r<rf:
                         FGarr=Garr
                         rf=r
@@ -165,7 +239,7 @@ def attach(protein,glycans,glycosylation_locations):
                         box.info(f"Clash Solved for {glycans[i]} at ASN :{target_ResId} with phi : {int(phi)} and psi : {int(psi)}")
                         break
                     else:
-                        box.info(f"Clash detected, trying cluster {clus_num+2}/{len(all_G)}...")
+                        box.info(f"Clash detected, trying cluster {clus_num+2}/{len(all_G)} with wiggle...")
                 if clash:
                     box.warning(f"Clash exist for {glycans[i]} at ASN :{target_ResId} with phi : {int(phi)} and psi : {int(psi)}")
 
@@ -203,7 +277,22 @@ def attach(protein,glycans,glycosylation_locations):
                 box.info(f"Trying cluster 1/{len(all_G)}...")
                 for (clus_num,Gi) in enumerate(all_G):
                     Garr = Gi[['X','Y','Z']].to_numpy(dtype=float)
-                    Garr,r,phi,psi = optwithwiggle(Garr,O1,CB,CG,ND2,C1,O5,Parr,torsionpoints,torsionparts,phisd,psisd)
+                    Garr,r,phi,psi = optwithwiggle(Garr,O1,CB,CG,ND2,C1,O5,Parr,torsionpoints,torsionparts,phisd,psisd,wiggle_tries=1,wiggle_method="none")
+                    if r<rf:
+                        FGarr=Garr
+                        rf=r
+                        cluster_best = clus_num
+                    if r==1.0:
+                        clash=False
+                        box.info(f"Clash Solved for {glycans[i]} at ASN :{target_ResId} with phi : {int(phi)} and psi : {int(psi)}")
+                        break
+                    else:
+                        box.info(f"Clash detected, trying cluster {clus_num+2}/{len(all_G)}...")
+                if rf != 1.0:
+                    box.info(f"Clash detected, trying cluster {cluster_best+1}/{len(all_G)} with wiggle...")
+                    Gi = all_G[cluster_best]
+                    Garr = Gi[['X','Y','Z']].to_numpy(dtype=float)
+                    Garr,r,phi,psi = optwithwiggle(Garr,O1,CB,CG,ND2,C1,O5,Parr,torsionpoints,torsionparts,phisd,psisd,wiggle_tries=40,wiggle_method="progressive_random")
                     if r<rf:
                         FGarr=Garr
                         rf=r
@@ -212,7 +301,7 @@ def attach(protein,glycans,glycosylation_locations):
                         box.info(f"Clash Solved for {glycans[i]} at ASN :{target_ResId} with phi : {int(phi)} and psi : {int(psi)}")
                         break
                     else:
-                        box.info(f"Clash detected, trying cluster {clus_num+2}/{len(all_G)}...")
+                        box.info(f"Clash detected, trying cluster {clus_num+2}/{len(all_G)} with wiggle...")
                 if clash:
                     box.warning(f"Clash exist for {glycans[i]} at ASN :{target_ResId} with phi : {int(phi)} and psi : {int(psi)}")
 
