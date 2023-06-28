@@ -67,9 +67,9 @@ if not uni_id=="" and uploaded_file is None:
                 st.warning(f"Only N & O glycosylation supported, location : {glycosylation_locations[i]['begin']}  is {glycosylation_locations[i]['description']}")
             else:
                 glycosylation_locations_N.append(glycosylation_locations[i])
-        dirlist_N = ["none"] + get_glycan_list("DGlcpNAca1-OH") + get_glycan_list("DGlcpNAcb1-OH")
-        dirlist_O = ["none"] + get_glycan_list("DGalpNAca1-OH") + get_glycan_list("DGalpNAcb1-OH")
-        dirlist_C = ["none"] + get_glycan_list("DManpa1-OH") + get_glycan_list("DManpb1-OH")
+        dirlist_N = ["None",] + get_glycan_list("DGlcpNAca1-OH") + get_glycan_list("DGlcpNAcb1-OH")
+        dirlist_O = ["None",] + get_glycan_list("DGalpNAca1-OH") + get_glycan_list("DGalpNAcb1-OH")
+        dirlist_C = ["None",] + get_glycan_list("DManpa1-OH") + get_glycan_list("DManpb1-OH")
         for i in range(len(glycosylation_locations_N)): 
             df = pdb.to_DF(protein)
             resname = df.loc[df['ResId'] == int(glycosylation_locations_N[i]["begin"]), 'ResName'].iloc[0]
@@ -88,7 +88,7 @@ if not uni_id=="" and uploaded_file is None:
                             f'Which glycans to attach on location : {resname}{glycosylation_locations_N[i]["begin"]} ?',   
                             (dirlist_C),key=str(i))
                 glycans[i]=options
-        if st.button('Process',key="process"):
+        if st.button('Process',key="process") and not all(element is "None" for element in glycans):
             s=time.time()
             with st.spinner('Processing...'):
                 g,clash = algo.attach(protein,glycans,glycosylation_locations_N)
@@ -126,9 +126,9 @@ elif uploaded_file is not None:
     )
     glycans=[1 for x in range(len(glycosylation_locations))]
     df = pdb.to_DF(protein)
-    dirlist_N = ["none"] + get_glycan_list("DGlcpNAca1-OH") + get_glycan_list("DGlcpNAcb1-OH")
-    dirlist_O = ["none"] + get_glycan_list("DGalpNAca1-OH") + get_glycan_list("DGalpNAcb1-OH")
-    dirlist_C = ["none"] + get_glycan_list("DManpa1-OH") + get_glycan_list("DManpb1-OH")
+    dirlist_N = ["None",] + get_glycan_list("DGlcpNAca1-OH") + get_glycan_list("DGlcpNAcb1-OH")
+    dirlist_O = ["None",] + get_glycan_list("DGalpNAca1-OH") + get_glycan_list("DGalpNAcb1-OH")
+    dirlist_C = ["None",] + get_glycan_list("DManpa1-OH") + get_glycan_list("DManpb1-OH")
     for i in range(len(glycosylation_locations)): 
         df = pdb.to_DF(protein)
         resname = df.loc[df['ResId'] == int(glycosylation_locations[i]), 'ResName'].iloc[0]
@@ -147,7 +147,8 @@ elif uploaded_file is not None:
                         f'Which glycans to attach on location : {resname}{glycosylation_locations[i]} ?',   
                         (dirlist_C),key=str(i))
             glycans[i]=options
-    if st.button('Process',key="process"):
+    if st.button('Process',key="process") and not all(element is "None" for element in glycans):
+            print(all(element is "None" for element in glycans))
             s=time.time()
             with st.spinner('Processing...'):
                 g,clash = algo.attach(protein,glycans,glycosylation_locations)
