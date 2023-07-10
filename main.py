@@ -119,7 +119,7 @@ elif uploaded_file is not None:
     protein = pdb.parse("output/temp/custom.pdb")
     molview.show3dbasic(string_data)
     protein_df= pdb.to_DF(protein)
-    spots= protein_df.loc[(protein_df['ResName']=="ASN") & (protein_df['Name']== 'CB') |((protein_df['ResName']=="THR") | (protein_df['ResName']=="SER")) & (protein_df['Name']== 'CB') ,['ResId']].iloc[:]['ResId'].tolist()
+    spots= protein_df.loc[(protein_df['ResName']=="ASN") & (protein_df['Name']== 'CB') |(protein_df['ResName']=="THR") | (protein_df['ResName']=="TYR")|((protein_df['ResName']=="TRP") | (protein_df['ResName']=="SER")) & (protein_df['Name']== 'CB') ,['ResId']].iloc[:]['ResId'].tolist()
     glycosylation_locations = st.multiselect(
     'Select Glycosylation Locations',
     spots,
@@ -148,7 +148,6 @@ elif uploaded_file is not None:
                         (dirlist_C),key=str(i))
             glycans[i]=options
     if st.button('Process',key="process") and not all(element is "None" for element in glycans):
-            print(all(element is "None" for element in glycans))
             s=time.time()
             with st.spinner('Processing...'):
                 g,clash = algo.attach(protein,glycans,glycosylation_locations)
