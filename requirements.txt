@@ -13,4 +13,4 @@ matplotlib
 maturin
 flask
 flask-cors
-guicorn
+gunicorn

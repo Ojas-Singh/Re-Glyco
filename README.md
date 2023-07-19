@@ -74,9 +74,9 @@ pkill screen
 ```
 
 
-# GlycoShape API Documentation
+# Re-Glyco API Documentation
 
-This document provides the details needed to utilize the API endpoints for GlycoShape, a service for protein glycosylation modeling. Please note that this API is currently unreleased and subject to change. The server address is `glycoshape.healoor.me:5000`.
+This document provides the details needed to utilize the API endpoints for GlycoShape, a service for protein glycosylation modeling. Please note that this API is currently unreleased and subject to change. The server address is `glycoshape.healoor.me:8000`.
 
 ## /available_glycans - GET
 
@@ -84,7 +84,7 @@ This endpoint retrieves all available glycans. No parameters are required for th
 
 Example:
 ```
-curl -X GET glycoshape.healoor.me:5000/available_glycans
+curl -X GET glycoshape.healoor.me:8000/available_glycans
 ```
 
 ## /linked_glycans - POST
@@ -93,7 +93,7 @@ This endpoint retrieves a list of glycans based on the link type. It expects a J
 
 Example:
 ```bash
-curl -X POST -H "Content-Type: application/json" -d '{"link_type":"N_linked"}' glycoshape.healoor.me:5000/linked_glycans
+curl -X POST -H "Content-Type: application/json" -d '{"link_type":"N_linked"}' glycoshape.healoor.me:8000/linked_glycans
 ```
 
 ## /custom_pdb_spots - POST
@@ -102,7 +102,7 @@ This endpoint accepts a PDB file and returns potential glycosylation spots. The 
 
 Example:
 ```bash
-curl -X POST -F "file=@/path/to/your/file.pdb" glycoshape.healoor.me:5000/custom_pdb_spots
+curl -X POST -F "file=@/path/to/your/file.pdb" glycoshape.healoor.me:8000/custom_pdb_spots
 ```
 
 Replace `@/path/to/your/file.pdb` with the path to your file.
@@ -113,7 +113,7 @@ This endpoint accepts a PDB file and a list of glycans and glycosylation locatio
 
 Example:
 ```bash
-curl -X POST -F "file=@/path/to/your/file.pdb" -F "glycans=DManpb1-4DGlcpNAcb1-4DGlcpNAca1-OH,DManpb1-4DGlcpNAcb1-4DGlcpNAca1-OH" -F "glycosylation_locations=38,75" glycoshape.healoor.me:5000/process_pdb
+curl -X POST -F "file=@/path/to/your/file.pdb" -F "glycans=DManpb1-4DGlcpNAcb1-4DGlcpNAca1-OH,DManpb1-4DGlcpNAcb1-4DGlcpNAca1-OH" -F "glycosylation_locations=38,75" glycoshape.healoor.me:8000/process_pdb
 ```
 
 Replace `@/path/to/your/file.pdb` with the path to your file. The `glycans` and `glycosylation_locations` data should be comma-separated lists of strings and integers, respectively.
@@ -129,13 +129,87 @@ with open("output.pdb", "wb") as f:
     f.write(decoded_data)
 ```
 
+```python
+import requests
+import json
+import base64
+
+data = {
+    'glycans': ['DManpb1-4DGlcpNAcb1-4DGlcpNAca1-OH','DManpb1-4DGlcpNAcb1-4DGlcpNAca1-OH'],  # Replace with the actual glycans
+    'glycosylation_locations': [38,75]  # Replace with the actual glycosylation locations
+}
+# Open the PDB file in binary mode
+with open('output/FOLD.pdb', 'rb') as f:
+    file = {'file': f}
+
+    # Send the request
+    response = requests.post('http://glycoshape.healoor.me:8000/process_pdb', files=file, data=data)
+
+# Parse the response JSON
+response_data = response.json()
+
+# The 'file' field in the response contains the base64-encoded PDB file
+encoded_file = response_data['file']
+
+# The 'clash' field in the response is the clash info
+clash = response_data['clash']
+
+# Decode the base64-encoded PDB file
+decoded_file = base64.b64decode(encoded_file)
+
+# Write the decoded PDB file to disk
+with open('output.pdb', 'wb') as f:
+    f.write(decoded_file)
+
+print(f"Clash info: {clash}")
+
+```
+
 ## /process_uniprot - POST
 
 This endpoint accepts a Uniprot ID, a list of glycans, and glycosylation locations. It returns a processed PDB file (in base64 format) and clash information. The request should include a JSON body with keys 'uniprot', 'glycans', and 'glycosylation_locations'.
 
 Example:
 ```bash
-curl -X POST -H "Content-Type: application/json" -d '{"uniprot":"P29016","glycans":["DManpb1-4DGlcpNAcb1-4DGlcpNAca1-OH","DManpb1-4DGlcpNAcb1-4DGlcpNAca1-OH"],"glycosylation_locations":[38,75]}' glycoshape.healoor.me:5000/process_uniprot
+curl -X POST -H "Content-Type: application/json" -d '{"uniprot":"P29016","glycans":["DManpb1-4DGlcpNAcb1-4DGlcpNAca1-OH","DManpb1-4DGlcpNAcb1-4DGlcpNAca1-OH"],"glycosylation_locations":[38,75]}' glycoshape.healoor.me:8000/process_uniprot
 ```
 
 Again, the returned `file` data will be a base64 encoded string, which can be decoded and written to a file as shown in the previous section.
+
+```python
+import requests
+import json
+import base64
+
+# Define the URL of your Flask application
+url = "http://glycoshape.healoor.me:8000/process_uniprot"
+
+# Define the parameters to be sent in the request
+data = {
+    'uniprot': 'P29016',  # Replace with the actual uniprot ID
+    'glycans': ['DManpb1-4DGlcpNAcb1-4DGlcpNAca1-OH','DManpb1-4DGlcpNAcb1-4DGlcpNAca1-OH'],  # Replace with the actual glycans
+    'glycosylation_locations': [38,75]  # Replace with the actual glycosylation locations
+}
+
+# Make the POST request
+response = requests.post(url, json=data)
+
+# Parse the response JSON
+response_data = response.json()
+
+# The 'file' field in the response contains the base64-encoded PDB file
+encoded_file = response_data['file']
+
+# The 'clash' field in the response is the clash info
+clash = response_data['clash']
+
+# Decode the base64-encoded PDB file
+decoded_file = base64.b64decode(encoded_file)
+
+# Write the decoded PDB file to disk
+with open('output.pdb', 'wb') as f:
+    f.write(decoded_file)
+
+print(f"Clash info: {clash}")
+```
+
