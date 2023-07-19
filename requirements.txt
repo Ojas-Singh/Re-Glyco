@@ -11,3 +11,6 @@ networkx
 plotly
 matplotlib
 maturin
+flask
+flask-cors
+guicorn

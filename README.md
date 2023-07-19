@@ -39,9 +39,9 @@ run
 
 python main.py
 
+gunicorn -w 4 api.py:app
 
-
-
+flask -A api.py run     
 
 
 # things for oracle for Hosting Websites

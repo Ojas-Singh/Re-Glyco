@@ -11,7 +11,7 @@ def get_glycan_list(suffix):
     return folders
 
 
-st.set_page_config(page_title="Re-GLyco", page_icon='icon.png', layout="wide", initial_sidebar_state="auto", menu_items=None)
+st.set_page_config(page_title="Re-GLyco", page_icon='resource/icon.png', layout="wide", initial_sidebar_state="auto", menu_items=None)
 
 hide_streamlit_style = """
             <style>
@@ -20,7 +20,7 @@ hide_streamlit_style = """
             </style>
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True) 
-image = Image.open('logo.png')
+image = Image.open('resource/logo.png')
 st.sidebar.image(image, caption='')
 uniprot=""
 uni_id = st.sidebar.text_input(
