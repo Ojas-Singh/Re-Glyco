@@ -72,3 +72,70 @@ ctr a + d   -> to detach
 pkill screen
 
 ```
+
+
+# GlycoShape API Documentation
+
+This document provides the details needed to utilize the API endpoints for GlycoShape, a service for protein glycosylation modeling. Please note that this API is currently unreleased and subject to change. The server address is `glycoshape.healoor.me:5000`.
+
+## /available_glycans - GET
+
+This endpoint retrieves all available glycans. No parameters are required for this GET request.
+
+Example:
+```
+curl -X GET glycoshape.healoor.me:5000/available_glycans
+```
+
+## /linked_glycans - POST
+
+This endpoint retrieves a list of glycans based on the link type. It expects a JSON body with one parameter `link_type`, which can be 'N_linked', 'O_linked', 'C_linked', or 'X_linked'.
+
+Example:
+```bash
+curl -X POST -H "Content-Type: application/json" -d '{"link_type":"N_linked"}' glycoshape.healoor.me:5000/linked_glycans
+```
+
+## /custom_pdb_spots - POST
+
+This endpoint accepts a PDB file and returns potential glycosylation spots. The request should include a file with key 'file'.
+
+Example:
+```bash
+curl -X POST -F "file=@/path/to/your/file.pdb" glycoshape.healoor.me:5000/custom_pdb_spots
+```
+
+Replace `@/path/to/your/file.pdb` with the path to your file.
+
+## /process_pdb - POST
+
+This endpoint accepts a PDB file and a list of glycans and glycosylation locations, then returns a processed PDB file (in base64 format) and clash information. The request should include a file with key 'file', and the 'glycans' and 'glycosylation_locations' data should be provided as form data, not JSON. 
+
+Example:
+```bash
+curl -X POST -F "file=@/path/to/your/file.pdb" -F "glycans=DManpb1-4DGlcpNAcb1-4DGlcpNAca1-OH,DManpb1-4DGlcpNAcb1-4DGlcpNAca1-OH" -F "glycosylation_locations=38,75" glycoshape.healoor.me:5000/process_pdb
+```
+
+Replace `@/path/to/your/file.pdb` with the path to your file. The `glycans` and `glycosylation_locations` data should be comma-separated lists of strings and integers, respectively.
+
+The returned `file` data will be a base64 encoded string. To decode this and write it to a file in Python, you can do:
+
+```python
+import base64
+
+data = "base64 encoded string"  # replace this with the actual string
+decoded_data = base64.b64decode(data)
+with open("output.pdb", "wb") as f:
+    f.write(decoded_data)
+```
+
+## /process_uniprot - POST
+
+This endpoint accepts a Uniprot ID, a list of glycans, and glycosylation locations. It returns a processed PDB file (in base64 format) and clash information. The request should include a JSON body with keys 'uniprot', 'glycans', and 'glycosylation_locations'.
+
+Example:
+```bash
+curl -X POST -H "Content-Type: application/json" -d '{"uniprot":"P29016","glycans":["DManpb1-4DGlcpNAcb1-4DGlcpNAca1-OH","DManpb1-4DGlcpNAcb1-4DGlcpNAca1-OH"],"glycosylation_locations":[38,75]}' glycoshape.healoor.me:5000/process_uniprot
+```
+
+Again, the returned `file` data will be a base64 encoded string, which can be decoded and written to a file as shown in the previous section.
