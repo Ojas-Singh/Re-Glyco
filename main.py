@@ -4,6 +4,9 @@ import time,os,config
 from PIL import Image
 from io import StringIO
 from annotated_text import annotated_text
+import streamlit.components.v1 as components
+import base64
+
 
 def get_glycan_list(suffix):
     directory = config.data_dir
@@ -20,7 +23,7 @@ hide_streamlit_style = """
             </style>
             """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True) 
-image = Image.open('resource/logo.png')
+image = Image.open('static/resource/logo.png')
 st.sidebar.image(image, caption='')
 uniprot=""
 uni_id = st.sidebar.text_input(
@@ -97,9 +100,10 @@ if not uni_id=="" and uploaded_file is None:
                 st.warning('Clash detected, rerun or the spot is not glycosylable, [low confidence region near spot.]  ')
             st.balloons()
             st.success("exec time : "+ str(int(time.time()-s)) +" seconds")
-            g1 = pdb.exportPDB('output/out.pdb',pdb.to_normal(g))
-            molview.show3doutput(g1,glycosylation_locations,confidence)
-            with open('output/out.pdb') as ofile:
+            g1 = pdb.exportPDB('static/out.pdb',pdb.to_normal(g))
+            components.iframe("https://healoor.me/litemol/index.html?pdbUrl="+config.domain_name+"app/static/out.pdb",height=600)
+            # molview.show3doutput(g1,glycosylation_locations,confidence)
+            with open('static/out.pdb') as ofile:
                 system = "".join([x for x in ofile])
                 btn = st.download_button(
                     label="Download Re-Glyco Structure",
@@ -119,7 +123,19 @@ elif uploaded_file is not None:
     protein = pdb.parse("output/temp/custom.pdb")
     molview.show3dbasic(string_data)
     protein_df= pdb.to_DF(protein)
-    spots= protein_df.loc[(protein_df['ResName']=="ASN") & (protein_df['Name']== 'CB') |(protein_df['ResName']=="THR") | (protein_df['ResName']=="TYR")|((protein_df['ResName']=="TRP") | (protein_df['ResName']=="SER")) & (protein_df['Name']== 'CB') ,['ResId']].iloc[:]['ResId'].tolist()
+    seqeunce = pdb.get_sequence_from_pdb("output/temp/custom.pdb")
+    st.code(seqeunce)
+    pridicted_spots = pdb.find_glycosylation_spots(seqeunce)
+    # spots= protein_df.loc[(protein_df['ResName']=="ASN") |(protein_df['ResName']=="THR") | (protein_df['ResName']=="TYR")|(protein_df['ResName']=="TRP") | (protein_df['ResName']=="SER") ,['ResId']].iloc[:]['ResId'].tolist()
+    spots= protein_df.loc[(protein_df['ResName']=="THR") | (protein_df['ResName']=="TYR")|(protein_df['ResName']=="TRP") | (protein_df['ResName']=="SER") ,['ResId']].iloc[:]['ResId'].tolist()
+
+    def unique(spots):
+        unique_list = []
+        for x in spots:
+            if x not in unique_list:
+                unique_list.append(x)
+        return unique_list
+    spots = pridicted_spots + unique(spots) 
     glycosylation_locations = st.multiselect(
     'Select Glycosylation Locations',
     spots,
@@ -156,8 +172,9 @@ elif uploaded_file is not None:
                 st.warning('Clash detected, rerun or the spot is not glycosylable, [low confidence region near spot.]  ')
             st.balloons()
             st.success("exec time :"+str(time.time()-s)+"Seconds")
-            g1 = pdb.exportPDB('output/out.pdb',pdb.to_normal(g))
-            molview.show3doutput(g1,glycosylation_locations,confidence)
+            g1 = pdb.exportPDB('static/out.pdb',pdb.to_normal(g))
+            components.iframe("https://healoor.me/litemol/index.html?pdbUrl="+config.domain_name+"app/static/out.pdb",height=600)
+            # molview.show3doutput(g1,glycosylation_locations,confidence)
             with open('output/out.pdb') as ofile:
                 system = "".join([x for x in ofile])
                 btn = st.download_button(
@@ -178,4 +195,4 @@ else:
 
     O15552, P29016, Q9BXJ4, P27918, B0YJ81
     """)
-
+    

@@ -1,7 +1,10 @@
 [server]
 port = 80   
+enableStaticServing = true
+
 [browser]
 gatherUsageStats = false
+
 
 [theme]
 primaryColor="#372C88"

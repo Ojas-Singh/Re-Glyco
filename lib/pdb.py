@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import config
 import os
+from Bio.PDB import PDBParser, Polypeptide
 
 def to_DF(pdbddata):
     df = pd.DataFrame(data=pdbddata)
@@ -96,3 +97,31 @@ def get_confidence(system):
                     confidence.append(0)
                 p+=1
     return confidence
+
+
+
+def find_glycosylation_spots(sequence):
+    
+    spots = []
+    # We iterate until the third-to-last residue, so we can check three-residue sequences.
+    for i in range(len(sequence) - 2):
+        # Check if the current three residues match the N-X-S/T pattern, and X is not proline.
+        if sequence[i] == 'N' and sequence[i + 1] != 'P' and (sequence[i + 2] == 'S' or sequence[i + 2] == 'T'):
+            # Since residue numbers typically start at 1, we add 1 to the index.
+            spots.append(i + 1)
+    return spots
+
+
+def get_sequence_from_pdb(file_path):
+    parser = PDBParser(PERMISSIVE=1)
+    structure = parser.get_structure('pdb', file_path)
+
+    sequences = []
+    for model in structure:
+        for chain in model:
+            residues = []
+            for residue in chain:
+                if residue.get_id()[0] == ' ':  # Skip over HETATM records
+                    residues.append(Polypeptide.three_to_one(residue.get_resname()))
+            sequences.append(''.join(residues))
+    return sequences[0]
