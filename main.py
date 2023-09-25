@@ -70,9 +70,9 @@ if not uni_id=="" and uploaded_file is None:
                 st.warning(f"Only N & O glycosylation supported, location : {glycosylation_locations[i]['begin']}  is {glycosylation_locations[i]['description']}")
             else:
                 glycosylation_locations_N.append(glycosylation_locations[i])
-        dirlist_N = ["None",] + get_glycan_list("DGlcpNAca1-OH") + get_glycan_list("DGlcpNAcb1-OH")
-        dirlist_O = ["None",] + get_glycan_list("DGalpNAca1-OH") + get_glycan_list("DGalpNAcb1-OH")
-        dirlist_C = ["None",] + get_glycan_list("DManpa1-OH") + get_glycan_list("DManpb1-OH")
+        dirlist_N = ["None",] + get_glycan_list("Man(b1-4)GlcNAc(b1-4)GlcNAc")
+        dirlist_O = ["None",] + get_glycan_list("GalNAc") 
+        dirlist_C = ["None",] + get_glycan_list("Man")
         for i in range(len(glycosylation_locations_N)): 
             df = pdb.to_DF(protein)
             resname = df.loc[df['ResId'] == int(glycosylation_locations_N[i]["begin"]), 'ResName'].iloc[0]
@@ -100,10 +100,10 @@ if not uni_id=="" and uploaded_file is None:
                 st.warning('Clash detected, rerun or the spot is not glycosylable, [low confidence region near spot.]  ')
             st.balloons()
             st.success("exec time : "+ str(int(time.time()-s)) +" seconds")
-            g1 = pdb.exportPDB('static/out.pdb',pdb.to_normal(g))
-            components.iframe("https://healoor.me/litemol/index.html?pdbUrl="+config.domain_name+"app/static/out.pdb",height=600)
-            # molview.show3doutput(g1,glycosylation_locations,confidence)
-            with open('static/out.pdb') as ofile:
+            g1 = pdb.exportPDB('/mnt/database/server_dir/temp/out.pdb',pdb.to_normal(g))
+            # components.iframe("https://healoor.me/litemol/index.html?pdbUrl=https://glycoshape.healoor.me/temp/out.pdb",height=600)
+            molview.show3doutput(g1,glycosylation_locations,confidence)
+            with open('/mnt/database/server_dir/temp/out.pdb') as ofile:
                 system = "".join([x for x in ofile])
                 btn = st.download_button(
                     label="Download Re-Glyco Structure",
@@ -123,9 +123,9 @@ elif uploaded_file is not None:
     protein = pdb.parse("output/temp/custom.pdb")
     molview.show3dbasic(string_data)
     protein_df= pdb.to_DF(protein)
-    seqeunce = pdb.get_sequence_from_pdb("output/temp/custom.pdb")
+    seqeunce,shift = pdb.get_sequence_from_pdb("output/temp/custom.pdb")
     st.code(seqeunce)
-    pridicted_spots = pdb.find_glycosylation_spots(seqeunce)
+    pridicted_spots = pdb.find_glycosylation_spots(seqeunce,shift)
     # spots= protein_df.loc[(protein_df['ResName']=="ASN") |(protein_df['ResName']=="THR") | (protein_df['ResName']=="TYR")|(protein_df['ResName']=="TRP") | (protein_df['ResName']=="SER") ,['ResId']].iloc[:]['ResId'].tolist()
     spots= protein_df.loc[(protein_df['ResName']=="THR") | (protein_df['ResName']=="TYR")|(protein_df['ResName']=="TRP") | (protein_df['ResName']=="SER") ,['ResId']].iloc[:]['ResId'].tolist()
 
@@ -142,15 +142,15 @@ elif uploaded_file is not None:
     )
     glycans=[1 for x in range(len(glycosylation_locations))]
     df = pdb.to_DF(protein)
-    dirlist_N = ["None",] + get_glycan_list("DGlcpNAca1-OH") + get_glycan_list("DGlcpNAcb1-OH")
-    dirlist_O = ["None",] + get_glycan_list("DGalpNAca1-OH") + get_glycan_list("DGalpNAcb1-OH")
-    dirlist_C = ["None",] + get_glycan_list("DManpa1-OH") + get_glycan_list("DManpb1-OH")
+    dirlist_N = ["None",] + get_glycan_list("Man(b1-4)GlcNAc(b1-4)GlcNAc")
+    dirlist_O = ["None",] + get_glycan_list("GalNAc") 
+    dirlist_C = ["None",] + get_glycan_list("Man")
     for i in range(len(glycosylation_locations)): 
         df = pdb.to_DF(protein)
         resname = df.loc[df['ResId'] == int(glycosylation_locations[i]), 'ResName'].iloc[0]
         if resname in config.N_linked["Res"]:
             options = st.selectbox(
-                        f'Which glycans to attach on location : {resname}{glycosylation_locations[i]} ?',
+                        f'Which glycans to attach on location : {resname}{glycosylation_locations[i]}  ?',
                         (dirlist_N),key=str(i))
             glycans[i]=options
         elif resname in config.O_linked["Res"]: 
@@ -172,10 +172,10 @@ elif uploaded_file is not None:
                 st.warning('Clash detected, rerun or the spot is not glycosylable, [low confidence region near spot.]  ')
             st.balloons()
             st.success("exec time :"+str(time.time()-s)+"Seconds")
-            g1 = pdb.exportPDB('static/out.pdb',pdb.to_normal(g))
-            components.iframe("https://healoor.me/litemol/index.html?pdbUrl="+config.domain_name+"app/static/out.pdb",height=600)
-            # molview.show3doutput(g1,glycosylation_locations,confidence)
-            with open('output/out.pdb') as ofile:
+            g1 = pdb.exportPDB('/mnt/database/server_dir/temp/out.pdb',pdb.to_normal(g))
+            # components.iframe("https://healoor.me/litemol/index.html?pdbUrl=https://glycoshape.healoor.me/temp/out.pdb",height=600)
+            molview.show3doutput(g1,glycosylation_locations,confidence)
+            with open('/mnt/database/server_dir/temp/out.pdb') as ofile:
                 system = "".join([x for x in ofile])
                 btn = st.download_button(
                     label="Download Re-Glyco Structure",

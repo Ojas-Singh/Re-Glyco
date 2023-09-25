@@ -99,8 +99,30 @@ def get_confidence(system):
     return confidence
 
 
+# {
+#     "ALA": "A",
+#     "ARG": "R",
+#     "ASN": "N",
+#     "ASP": "D",
+#     "CYS": "C",
+#     "GLU": "E",
+#     "GLN": "Q",
+#     "GLY": "G",
+#     "HIS": "H",
+#     "ILE": "I",
+#     "LEU": "L",
+#     "LYS": "K",
+#     "MET": "M",
+#     "PHE": "F",
+#     "PRO": "P",
+#     "SER": "S",
+#     "THR": "T",
+#     "TRP": "W",
+#     "TYR": "Y",
+#     "VAL": "V"
+# }
 
-def find_glycosylation_spots(sequence):
+def find_glycosylation_spots(sequence,shift):
     
     spots = []
     # We iterate until the third-to-last residue, so we can check three-residue sequences.
@@ -108,20 +130,29 @@ def find_glycosylation_spots(sequence):
         # Check if the current three residues match the N-X-S/T pattern, and X is not proline.
         if sequence[i] == 'N' and sequence[i + 1] != 'P' and (sequence[i + 2] == 'S' or sequence[i + 2] == 'T'):
             # Since residue numbers typically start at 1, we add 1 to the index.
-            spots.append(i + 1)
+            spots.append(i + 1 + shift)
+
+        if sequence[i] == 'T' or sequence[i] =='Y' or sequence[i] == 'W' or sequence[i] == 'S':
+            spots.append(i + 1 + shift)
     return spots
 
 
 def get_sequence_from_pdb(file_path):
+    protein = parse(file_path)
+    df= to_DF(protein)
     parser = PDBParser(PERMISSIVE=1)
     structure = parser.get_structure('pdb', file_path)
-
-    sequences = []
-    for model in structure:
-        for chain in model:
-            residues = []
-            for residue in chain:
-                if residue.get_id()[0] == ' ':  # Skip over HETATM records
-                    residues.append(Polypeptide.three_to_one(residue.get_resname()))
-            sequences.append(''.join(residues))
-    return sequences[0]
+    final_sequence =[]
+    sequences = ''
+    try:
+        for model in structure:
+            for chain in model:
+                residues = []
+                for residue in chain:
+                    if residue.get_id()[0] == ' ':  # Skip over HETATM records
+                        # residues.append(Polypeptide.three_to_one(residue.get_resname()))
+                        sequences += Polypeptide.three_to_one(residue.get_resname())
+    except:
+        pass
+    shift = df["ResId"][0]-1
+    return sequences,shift

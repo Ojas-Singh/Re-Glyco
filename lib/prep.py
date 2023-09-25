@@ -5,6 +5,7 @@ import argparse
 import requests
 import warnings
 import json
+import pdb
 import streamlit as st
 
 @st.cache_data
@@ -59,3 +60,27 @@ def query_uniprot_for_glycosylation_locations(uniprotID):
     }
 
     return output
+
+def query_uniprot_for_glycosylation_locations_with_glycan_list(uniprotID):
+    uniprotRequestURL = f"https://www.ebi.ac.uk/proteins/api/proteins/{uniprotID}"
+    uniprotResponse = requests.get(
+        uniprotRequestURL, headers={"Accept": "application/json"}
+    )
+    if not uniprotResponse.ok:
+        uniprotResponse.raise_for_status()
+        sys.exit()
+    uniprotResponseJSON = uniprotResponse.json()
+    uniprotFeatures = uniprotResponseJSON["features"]
+    glycan_list =['dad','dawq']
+    final = []
+    for item in uniprotFeatures:
+        if item["type"] == "CARBOHYD":
+            output = {  'residueID': item["begin"],
+                        'residueName': residue_IDs,
+                        'glycanIDs': glycan_list,
+                            }           
+            final.append(output)
+
+    
+
+    return final
