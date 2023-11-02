@@ -2,7 +2,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 .vscode
-output
 data/*
 .ipynb_checkpoints
 ignore
@@ -11,3 +10,4 @@ glycors/target
 glycors/Cargo.lock
 AF2_test/temp/*.pdb
 experimental
+DB

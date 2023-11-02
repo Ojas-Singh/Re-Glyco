@@ -1,5 +1,5 @@
-data_dir = "/mnt/database/DB/"
-upload_dir = "/mnt/database/server_dir/"
+data_dir = "DB/"
+upload_dir = "output/"
 domain_name = "https://glycoshape.io"
 N_linked = {"Res":["ASN"],"phi": (-130,-63),"psi":(152,205)}
 O_linked = {"Res":["SER","THR"],"phi": (65,86),"psi":(111,164)}

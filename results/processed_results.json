@@ -1,0 +1,45 @@
+[
+    {
+        "uniprotID": "A0A5B9",
+        "clash_data": false,
+        "box_data": "Calculation started\nResidue : 69A\n GlcNAc(b1-2)Man(a1-3)[GlcNAc(b1-2)Man(a1-6)]Man(b1-4)GlcNAc(b1-4)GlcNAc has 3 Clusters\nTrying cluster 0...\nClash Solved for GlcNAc(b1-2)Man(a1-3)[GlcNAc(b1-2)Man(a1-6)]Man(b1-4)GlcNAc(b1-4)GlcNAc at residue :69A with phi : 166 and psi : -99, cluster 0\nFinished in 0.39910268783569336 seconds",
+        "uniprot_CARBOHYD": {
+            "type": "CARBOHYD",
+            "category": "PTM",
+            "ftId": "",
+            "description": "N-linked (GlcNAc...) asparagine",
+            "begin": "69",
+            "end": "69",
+            "molecule": "",
+            "evidences": [
+                {
+                    "code": "ECO:0000255",
+                    "source": {
+                        "name": "PROSITE-ProRule",
+                        "id": "PRU00498",
+                        "url": "https://prosite.expasy.org/unirule/PRU00498"
+                    }
+                }
+            ]
+        }
+    },
+    {
+        "uniprotID": "A0AV02",
+        "clash_data": false,
+        "box_data": "Calculation started\nResidue : 221A\n GlcNAc(b1-2)Man(a1-3)[GlcNAc(b1-2)Man(a1-6)]Man(b1-4)GlcNAc(b1-4)GlcNAc has 3 Clusters\nTrying cluster 0...\nClash Solved for GlcNAc(b1-2)Man(a1-3)[GlcNAc(b1-2)Man(a1-6)]Man(b1-4)GlcNAc(b1-4)GlcNAc at residue :221A with phi : 189 and psi : -67, cluster 0\nFinished in 2.5238189697265625 seconds",
+        "uniprot_CARBOHYD": {
+            "type": "CARBOHYD",
+            "category": "PTM",
+            "ftId": "",
+            "description": "N-linked (GlcNAc...) asparagine",
+            "begin": "221",
+            "end": "221",
+            "molecule": "",
+            "evidences": [
+                {
+                    "code": "ECO:0000255"
+                }
+            ]
+        }
+    }
+]
