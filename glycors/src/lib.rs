@@ -216,9 +216,9 @@ pub fn opt_genetic(
     phisd: (f64, f64),
     psisd: (f64, f64),
 ) -> PyResult<(f64, f64, f64)> {
-    let population_size = 200;
-    let generations = 10;
-    let mutation_rate = 0.1;
+    let population_size = 128;
+    let generations = 8;
+    let mutation_rate = 0.2;
     let mut rng = rand::thread_rng();
     if phisd.0 >= phisd.1 || psisd.0 >= psisd.1 {
         return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>("Invalid input ranges for phisd and/or psisd"));
@@ -439,13 +439,13 @@ fn fastest_dihedral(p0: &Vec<f64>, p1: &Vec<f64>, p2: &Vec<f64>, p3: &Vec<f64>) 
     180.0 * y.atan2(x) / PI
 }
 
-
-fn fastest_angle(p0: &Vec<f64>, p1: &Vec<f64>, p2: &Vec<f64>) -> f64 {
+#[pyfunction]
+pub fn fastest_angle(p0: Vec<f64>, p1: Vec<f64>, p2: Vec<f64>) -> PyResult<f64> {
     let v0 = subtract(&p0, &p1);
     let v1 = subtract(&p2, &p1);
     let cosine_angle = dot(&v0, &v1) / (norm(&v0) * norm(&v1));
     let angle = cosine_angle.acos();
-    angle.to_degrees()
+    Ok(angle.to_degrees())
 }
 
 
@@ -455,6 +455,7 @@ fn glycors(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(opt_genetic))?;
     m.add_wrapped(wrap_pyfunction!(adjust_dihedrals))?;
     m.add_wrapped(wrap_pyfunction!(rotation_mat))?;
+    m.add_wrapped(wrap_pyfunction!(fastest_angle))?;
     Ok(())
 }
 

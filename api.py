@@ -1,21 +1,101 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify
 from flask_cors import CORS
-from tempfile import NamedTemporaryFile
-import os
+import requests
+import sys, time
+import os,json
 import time
 import config
-import base64
 from lib import pdb,algo,prep
+from thefuzz import fuzz
+
+
+
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000
 CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-def get_glycan_list(suffix):
-    directory = config.data_dir
-    folders = [folder for folder in os.listdir(directory) if os.path.isdir(os.path.join(directory, folder)) and folder.endswith(suffix)]
-    return folders
 
-@app.route('/available_glycans', methods=['GET'])
+def load_glycan_data(directory_path):
+    glycan_data = []
+    wurcs_with_filename = []
+  
+    for root, dirs, files in os.walk(directory_path):
+        for file in files:
+            if file.endswith(".json"):
+                with open(os.path.join(root, file), "r") as f:
+                    try:
+                        data = json.load(f)
+                        wurcs = data.get("wurcs")  # Using get() avoids a KeyError if 'wurcs' is not present
+                        if wurcs is not None:  # Check to ensure 'wurcs' was present in the data
+                            wurcs_with_filename.append((wurcs, data.get("iupac")))
+                            glycan_data.append((data, data.get("iupac")))  # Storing data with filename
+                    except:
+                        pass
+    with open(directory_path+'GLYCAN_TYPE.json', 'r') as file:
+        data = json.load(file)
+    N_Glycans =  data.get('N', [])
+    O_Glycans =  data.get('O', [])
+    Oligomannose = data.get('Oligomannose',[])
+    try:
+        with open(directory_path+'GAG.json', 'r') as file:
+            data2 = json.load(file)
+        GAGs= data2.get('GAG', [])
+    except:
+        GAGs =[]
+    return glycan_data, wurcs_with_filename, N_Glycans, O_Glycans, GAGs , Oligomannose
+
+
+glycans_with_filename, wurcs_with_filename, N_Glycans, O_Glycans, GAGs, Oligomannose = load_glycan_data(config.data_dir)
+
+def get_filtered_glycanlist(path, residue_name):
+    try:
+        all_folders = os.listdir(path)
+    except FileNotFoundError:
+        print(f"The directory {path} was not found.")
+        return []
+    match residue_name:
+        case "ASN":
+            filtered_folders = N_Glycans
+            return filtered_folders
+        case "SER":
+            filtered_folders = [folder for folder in all_folders if folder.endswith("GalNAc") or folder.endswith("Fuc") or folder.endswith("Glc") or folder.endswith("Xyl")]
+            filtered_folders.append("GlcNAc")
+            return filtered_folders
+        case "THR":
+            filtered_folders = [folder for folder in all_folders if folder.endswith("GalNAc") or folder.endswith("Fuc") or folder.endswith("Man")]
+            filtered_folders.append("GlcNAc")
+            return filtered_folders
+        # case "TYR":
+        #     filtered_folders = ["Man"]
+        #     return filtered_folders
+        case "TRP":
+            filtered_folders = ["Man"]
+            return filtered_folders
+        case _:
+            return all_folders
+        
+
+
+
+
+
+def score_glycan(glycan_with_filename, search_string):
+    glycan_data, filename = glycan_with_filename
+    # Considering using the token_set_ratio which handles partial string matches well
+    return fuzz.token_set_ratio(str(glycan_data).lower(), search_string.lower())
+
+
+
+def search_glycans(search_string, glycans_with_filename):
+    scored_glycans = [(score_glycan(glycan_with_filename, search_string), glycan_with_filename) for glycan_with_filename in glycans_with_filename]
+    scored_glycans.sort(reverse=True, key=lambda x: x[0])
+    return [filename for score, (glycan, filename) in scored_glycans if score > 80]  # Consider only items with a score above a threshold
+
+
+
+@app.route('/api/available_glycans', methods=['GET'])
 def list_glycans():
     base_dir = config.data_dir
     if os.path.exists(base_dir):
@@ -24,88 +104,387 @@ def list_glycans():
     else:
         return jsonify({'error': 'Directory not found'})
     
-@app.route('/linked_glycans', methods=['POST'])
-def linked_glycans():
-    link_type = request.json.get('link_type')
-    if link_type == 'N_linked':
-        dir_list = ["None",] + get_glycan_list("DGlcpNAca1-OH") + get_glycan_list("DGlcpNAcb1-OH")
-    elif link_type == 'O_linked':
-        dir_list = ["None",] + get_glycan_list("DGalpNAca1-OH") + get_glycan_list("DGalpNAcb1-OH")
-    elif link_type == 'C_linked':
-        dir_list = ["None",] + get_glycan_list("DManpa1-OH") + get_glycan_list("DManpb1-OH")
-    elif link_type == 'X_linked':
-        dir_list = ["None",] + get_glycan_list("DXylpa1-OH") + get_glycan_list("DXylpb1-OH")
+
+@app.route('/api/search', methods=['POST'])
+def search():
+    string = request.json.get('search_string')
+    
+    # Ensure the search string is not None
+    if string is None:
+        return jsonify({'error': 'Search string is None'})
+
+    # Clean up the search string
+    string = string.strip()
+
+    # Base directory path
+    base_dir = '/mnt/database/DB'
+
+    # Check if base directory exists
+    if not os.path.exists(base_dir):
+        return jsonify({'error': 'Directory not found'})
+
+    # If the search string is empty, return the list of directories
+    if string == "all":
+        dir_list = [d for d in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, d))]
+        return jsonify({'search_string': string, 'results': dir_list})
     else:
-        return jsonify({'error': 'Invalid link type'})
+        # Based on the specific search strings, return appropriate lists
+        if string == "N-Glycans":
+            # Your logic to get N-Glycans list
+            l = N_Glycans
+        elif string == "O-Glycans":
+            # Your logic to get O-Glycans list
+            l = O_Glycans
+        elif string == "GAGs":
+            # Your logic to get GAGs list
+            l = GAGs
+        elif string == 'Oligomannose':
+            l = Oligomannose
+        else:
+            # For other search strings
+            if os.path.exists(config.data_dir):
+                l = search_glycans(string, glycans_with_filename)
+            else:
+                return jsonify({'error': 'Directory not found'})
 
-    return jsonify({'glycan_list': dir_list})
+        return jsonify({'search_string': string, 'results': l})
 
-@app.route('/custom_pdb_spots', methods=['POST'])
-def custom_pdb_spots():
-    file = request.files['file']
-    if not file:
-        return "No file", 400
+        
 
-    temp_file = NamedTemporaryFile(delete=False)
-    file.save(temp_file.name)
-    temp_file.close()
-    protein = pdb.parse(temp_file.name)
-    protein_df= pdb.to_DF(protein)
-    spots= protein_df.loc[(protein_df['ResName']=="ASN") & (protein_df['Name']== 'CB') |(protein_df['ResName']=="THR") | (protein_df['ResName']=="TYR")|((protein_df['ResName']=="TRP") | (protein_df['ResName']=="SER")) & (protein_df['Name']== 'CB') ,['ResId']].iloc[:]['ResId'].tolist()
-    os.unlink(temp_file.name)
+def wurcs_search(search_wurcs, wurcs_with_filename):
+    scores = []
+    for wurcs, filename in wurcs_with_filename:
+        score = fuzz.partial_ratio(str(search_wurcs).lower(), wurcs.lower())
+        scores.append((score, filename))
+    scores.sort(reverse=True, key=lambda x: x[0])
+    top_filenames = [filename for score, filename in scores[:10]]
+    return top_filenames
 
-    return jsonify({'spots': spots})
+@app.route('/api/wurcs', methods=['POST'])
+def wurcs():
+    string = request.json.get('wurcs_string')
 
-@app.route('/process_pdb', methods=['POST'])
-def process_pdb():
-    file = request.files['file']
+    if os.path.exists( config.data_dir):
+        l = wurcs_search(string, wurcs_with_filename)
+        return jsonify({'search_string':string ,'results': l})
+    else:
+        return jsonify({'error': 'Directory not found'})
 
-    # Use request.form.get instead of request.json.get
-    glycans = request.form.get('glycans').split(',')
-    glycosylation_locations = [int(x) for x in request.form.get('glycosylation_locations').split(',')]
 
-    if not file:
-        return "No file", 400
+@app.route('/api/rcsb', methods=['POST'])
+def rcsb():
+    downloadLocation = config.upload_dir
+    pdbID = request.json.get('uniprot')
+    requestURLcif = f"https://files.rcsb.org/download/{pdbID}.cif"
+    outputFileName = pdbID + ".pdb"
+    outputFilePath = os.path.join(downloadLocation, outputFileName)
+    requestURLpdb = f"https://files.rcsb.org/download/{pdbID}.pdb"
+    response = requests.get(requestURLpdb)
+    
+    if response.status_code == 200:
+        with open(f"{downloadLocation}{pdbID}.pdb", "wb") as f:
+            f.write(response.content)
+        print(f"Downloaded {pdbID}.pdb successfully!")
+        protein = pdb.parse(outputFilePath)
+        df = pdb.to_DF(protein)
+        final = []
+        # sequence, shift = pdb.get_sequence_from_pdb(filename)
+        # spots = pdb.find_glycosylation_spots(sequence,shift)
 
-    with NamedTemporaryFile(delete=False) as temp_file:
-        file.save(temp_file.name)
-        temp_file_path = temp_file.name  # Store the file path to delete it later
+        sequence_with_info, sequences = pdb.get_sequence_from_pdb(outputFilePath )
+        spots = pdb.find_glycosylation_spots(sequence_with_info)
+        for i in spots:
+                resname = df.loc[(df['ResId'] == int(i[1])) & (df['Chain'] == i[2]), 'ResName'].iloc[0]
+                output = {  
+                        'residueTag': int(i[0]),
+                        'residueID': int(i[1]),
+                        'residueName': resname,
+                        'residueChain': i[2],
+                        'glycanIDs':  get_filtered_glycanlist(config.data_dir,resname),
+                            }  
+                final.append(output)
+        data = {
+            "sequenceLength": len(sequence_with_info),
+            "sequence": sequences ,
+            "glycosylations": [],
+        }
+        return jsonify({'uniprot':f'{pdbID}','glycosylation_locations': data, 'requestURL': requestURLcif, 'configuration' : final})
 
-    protein = pdb.parse(temp_file_path)
-    g, clash = algo.attach(protein, glycans, glycosylation_locations)
-    os.unlink(temp_file_path)  # Delete the original temp file
+    else:
+        print(f"Failed to download {pdbID}.pdb. HTTP Status Code: {response.status_code}")
+        response.raise_for_status()
+        sys.exit()
+    
+    
 
-    with NamedTemporaryFile(suffix=".pdb", delete=False) as temp_file:
-        pdb.exportPDB(temp_file.name, pdb.to_normal(g))
+    
+@app.route('/api/uniprot', methods=['POST'])
+def uniprot():
+    # base_dir = config.data_dir
+    # if os.path.exists(base_dir):
+    #     dir_list = [d for d in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, d))]
+    downloadLocation = config.upload_dir
+    uniprotID = request.json.get('uniprot')
+    requestURLcif = f"https://alphafold.ebi.ac.uk/files/AF-{uniprotID}-F1-model_v4.cif"
+    outputFileName = uniprotID + ".pdb"
+    outputFilePath = os.path.join(downloadLocation, outputFileName)
+    requestURLpdb = f"https://alphafold.ebi.ac.uk/files/AF-{uniprotID}-F1-model_v4.pdb"
+    query = requests.get(requestURLpdb, allow_redirects=True)
+    outputLines = []
+    downloadedLines = query.iter_lines()
+    for line in downloadedLines:
+        decodedLine = line.decode("utf-8")
+        if decodedLine[:5] != "MODEL":
+            outputLines.append(decodedLine)
+    with open(outputFilePath, "w") as file:
+        file.writelines("%s\n" % l for l in outputLines)
+    protein = pdb.parse(outputFilePath)
+    df = pdb.to_DF(protein)
+    
+    uniprotRequestURL = f"https://www.ebi.ac.uk/proteins/api/proteins/{uniprotID}"
+    uniprotResponse = requests.get(
+        uniprotRequestURL, headers={"Accept": "application/json"}
+    )
+    if not uniprotResponse.ok:
+        uniprotResponse.raise_for_status()
+        sys.exit()
+    uniprotResponseJSON = uniprotResponse.json()
+    uniprotGlycosylations = []
+    uniprotSequence = uniprotResponseJSON["sequence"]
+    uniprotFeatures = uniprotResponseJSON["features"]
+    uniprot_spots= []
+    final = []
+    for item in uniprotFeatures:
+        if item["type"] == "CARBOHYD":
+            uniprotGlycosylations.append(item)
+            resname = df.loc[df['ResId'] == int(item["begin"]), 'ResName'].iloc[0]
+            output = {  'residueTag':int(item["begin"]),
+                        'residueID': int(item["begin"]),
+                        'residueName': resname,
+                        'residueChain': "A",
+                        'glycanIDs': get_filtered_glycanlist(config.data_dir,resname)
+                            }           
+            final.append(output)
+            uniprot_spots.append(int(item["begin"]))
+    outputSequence = uniprotSequence["sequence"]
+    outputSequenceLength = uniprotSequence["length"]
+    output = {
+        "sequenceLength": outputSequenceLength,
+        "sequence": outputSequence,
+        "glycosylations": uniprotGlycosylations,
+    }  
+    sequence_with_info, sequences = pdb.get_sequence_from_pdb(outputFilePath)
+    spots = pdb.find_glycosylation_spots(sequence_with_info)
+    for i in spots:
+        if i[1] not in uniprot_spots:
+            resname = df.loc[(df['ResId'] == int(i[1])) & (df['Chain'] == i[2]), 'ResName'].iloc[0]
+            output2 = {  
+                        'residueTag': int(i[0]),
+                        'residueID': int(i[1]),
+                        'residueName': resname,
+                        'residueChain': "A",
+                        'glycanIDs':  get_filtered_glycanlist(config.data_dir,resname),
+                            }  
+            final.append(output2)
+    return jsonify({'uniprot': uniprotID, 'glycosylation_locations': output, 'requestURL': requestURLcif, 'configuration' : final})
 
-        # The file will be closed after the with block, no need for f.close()
-        with open(temp_file.name, "rb") as f:
-            encoded_string = base64.b64encode(f.read()).decode('utf-8')
 
-    os.unlink(temp_file.name)  # Don't forget to delete the temp file after using it
-
-    return jsonify({'file': encoded_string, 'clash': clash})
-
-@app.route('/process_uniprot', methods=['POST'])
+@app.route('/api/process_uniprot', methods=['POST'])
 def process_uniprot():
-    uniprot = request.json.get('uniprot')
-    glycans = request.json.get('glycans')
-    glycosylation_locations = request.json.get('glycosylation_locations')
-    file_path = prep.download_and_prepare_alphafoldDB_model(uniprot, "output/temp/")
-    protein = pdb.parse(file_path)
-    g, clash = algo.attach(protein, glycans, glycosylation_locations)
+    downloadLocation = config.upload_dir
 
-    temp_file = NamedTemporaryFile(suffix=".pdb", delete=False)
-    pdb.exportPDB(temp_file.name, pdb.to_normal(g))
+    # Extract data from the JSON payload
+    data = request.json
+    uniprotID = data.get('uniprotID')
+    selectedGlycans = data.get('selectedGlycans')
 
-    with open(temp_file.name, "rb") as f:
-        encoded_string = base64.b64encode(f.read()).decode('utf-8')
-    f.close()
-    # os.unlink(temp_file.name)
+    # Extract glycans and glycosylation_locations from selectedGlycans
+    glycans = [glycan for glycan in selectedGlycans.values() if glycan]  # Filter out empty glycans
+    glycosylation_locations = [location for location in selectedGlycans.keys()]
 
-    return jsonify({'file': encoded_string, 'clash': clash})
+    # Assuming you have the necessary pdb and algo modules and methods
+    protein = pdb.parse(f'{downloadLocation}{uniprotID}.pdb')
+    g, clash, box = algo.attach(protein, glycans, glycosylation_locations)
+    outputshortfilepath = f'{uniprotID}_glycosylated_{time.time()}.pdb'
+    outputfilepath = f'{downloadLocation}{outputshortfilepath}'
+    
+    pdb.exportPDB(outputfilepath, pdb.to_normal(g))
+    
+    return jsonify({'output':outputshortfilepath, 'clash': clash, 'box': box})
 
 
+@app.route('/api/one_uniprot', methods=['POST'])
+def one_uniprot():
+    downloadLocation = config.upload_dir
+
+    # Extract data from the JSON payload
+    data = request.json
+    uniprotID = data.get('uniprotID')
+    outputFileName = uniprotID + ".pdb"
+    outputFilePath = os.path.join(downloadLocation, outputFileName)
+    protein = pdb.parse(outputFilePath)
+    df = pdb.to_DF(protein)
+    uniprotRequestURL = f"https://www.ebi.ac.uk/proteins/api/proteins/{uniprotID}"
+    uniprotResponse = requests.get(
+        uniprotRequestURL, headers={"Accept": "application/json"}
+    )
+    if not uniprotResponse.ok:
+        uniprotResponse.raise_for_status()
+        sys.exit()
+    uniprotResponseJSON = uniprotResponse.json()
+    uniprotFeatures = uniprotResponseJSON["features"]
+    default_glycan = {
+    "C-linked (Man) tryptophan": "Man",
+    "O-linked (Fuc...) serine": "Fuc",
+    "O-linked (Fuc...) threonine": "Fuc",
+    "O-linked (GalNAc...) serine": "Neu5Ac(a2-3)Gal(b1-3)GalNAc",
+    "O-linked (GalNAc...) threonine": "Neu5Ac(a2-3)Gal(b1-3)GalNAc",
+    "O-linked (Glc...) serine": "Glc",
+    "O-linked (Glc...) threonine": "Glc",
+    "O-linked (Man...) serine": "Neu5Ac(a2-3)Gal(b1-4)[Fuc(a1-3)]GlcNAc(b1-2)Man",
+    "O-linked (Man...) threonine": "Neu5Ac(a2-3)Gal(b1-4)[Fuc(a1-3)]GlcNAc(b1-2)Man",
+    "O-linked (Xyl...) serine": "Xyl",
+    "O-linked (Xyl...) threonine": "Xyl",
+    "O-linked (Xyl...) (chondroitin sulfate) serine": "GalNAc(b1-4)GlcA(b1-3)GalNAc(b1-4)GlcA(b1-3)GalNAc(b1-4)GlcA(b1-3)GalNAc(b1-4)GlcA(b1-3)Gal(b1-3)Gal(b1-4)Xyl",
+    "O-linked (Xyl...) (chondroitin sulfate) threonine": "GalNAc(b1-4)GlcA(b1-3)GalNAc(b1-4)GlcA(b1-3)GalNAc(b1-4)GlcA(b1-3)GalNAc(b1-4)GlcA(b1-3)Gal(b1-3)Gal(b1-4)Xyl",
+    "O-linked (GlcNAc) serine": "GlcNAc",
+    "O-linked (GlcNAc) threonine": "GlcNAc",
+    "N-linked (GlcNAc...) asparagine": "GlcNAc(b1-2)Man(a1-3)[GlcNAc(b1-2)Man(a1-6)]Man(b1-4)GlcNAc(b1-4)GlcNAc",
+    "N-linked (GlcNAc...) (complex) asparagine": "Neu5Ac(a2-6)Gal(b1-4)GlcNAc(b1-2)Man(a1-3)[Neu5Ac(a2-6)Gal(b1-4)GlcNAc(b1-2)Man(a1-6)]Man(b1-4)GlcNAc(b1-4)[Fuc(a1-6)]GlcNAc",
+    "N-linked (GlcNAc...) (hybrid) asparagine": "Neu5Ac(a2-6)Gal(b1-4)GlcNAc(b1-2)Man(a1-3)[Man(a1-3)[Man(a1-6)]Man(a1-6)]Man(b1-4)GlcNAc(b1-4)GlcNAc",
+    "N-linked (GlcNAc...) (high mannose) asparagine": "Neu5Ac(a2-6)Gal(b1-4)GlcNAc(b1-2)Man(a1-3)[Neu5Ac(a2-6)Gal(b1-4)GlcNAc(b1-2)Man(a1-6)]Man(b1-4)GlcNAc(b1-4)[Fuc(a1-6)]GlcNAc"
+}
+
+    selectedGlycans = {}
+
+    for item in uniprotFeatures:
+        if item["type"] == "CARBOHYD":
+            resname = df.loc[df['ResId'] == int(item["begin"]), 'ResName'].iloc[0]
+            key = str(int(item["begin"])) + "_A"
+            info = item["description"]
+            
+            # Check if the info matches any key in the glycan_data and get the corresponding value
+            value = default_glycan.get(info, None)
+            
+            if value:  # If value is not None, add to the selectedGlycans dictionary
+                selectedGlycans[key] = value
+            
+    
+
+    
+
+    # Extract glycans and glycosylation_locations from selectedGlycans
+    glycans = [glycan for glycan in selectedGlycans.values() if glycan]  # Filter out empty glycans
+    glycosylation_locations = [location for location in selectedGlycans.keys()]
+
+    # Assuming you have the necessary pdb and algo modules and methods
+    protein = pdb.parse(f'{downloadLocation}{uniprotID}.pdb')
+    g, clash, box = algo.attach(protein, glycans, glycosylation_locations)
+    outputshortfilepath = f'{uniprotID}_glycosylated_{time.time()}.pdb'
+    outputfilepath = f'{downloadLocation}{outputshortfilepath}'
+    
+    pdb.exportPDB(outputfilepath, pdb.to_normal(g))
+    
+    return jsonify({'output':outputshortfilepath, 'clash': clash, 'box': box})
+
+
+@app.route('/api/upload_pdb', methods=['POST'])
+def upload_pdb():
+    upload_dir = config.upload_dir
+    if 'pdbFile' not in request.files:
+        return jsonify(error="No file part"), 400
+    file = request.files['pdbFile']
+    # Check if the post request has the file part
+    if file.filename == '':
+        return jsonify(error="No selected file"), 400
+
+    if file :
+        filename = os.path.join(upload_dir, file.filename)
+        file.save(filename)
+        pdb.remove_hydrogens(filename,filename)
+        
+        base_dir = config.data_dir
+        if os.path.exists(base_dir):
+            dir_list = [d for d in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, d))]
+
+        outputfilename = f'{filename}_glycosylated.pdb'
+        protein = pdb.parse(filename)
+        df = pdb.to_DF(protein)
+        final = []
+        sequence_with_info, sequences = pdb.get_sequence_from_pdb(filename)
+        spots = pdb.find_glycosylation_spots(sequence_with_info)
+        for i in spots:
+             resname = df.loc[(df['ResId'] == int(i[1])) & (df['Chain'] == i[2]), 'ResName'].iloc[0]
+             output = {  
+                        'residueTag': int(i[0]),
+                        'residueID': int(i[1]),
+                        'residueName': resname,
+                        'residueChain': i[2],
+                        'glycanIDs':  get_filtered_glycanlist(config.data_dir,resname),
+                            }  
+             final.append(output)
+        data = {
+            "sequenceLength": len(sequence_with_info),
+            "sequence": sequences ,
+            "glycosylations": spots,
+        }
+        return jsonify({'uniprot':f'{file.filename}','glycosylation_locations': data, 'requestURL': f'https://glycoshape.io/output/{file.filename}', 'configuration' : final})
+    return jsonify(error="Invalid file type"), 400
+
+@app.route('/api/scanner_pdb', methods=['POST'])
+def scanner_pdb():
+    downloadLocation = config.upload_dir
+
+    # Extract data from the JSON payload
+    data = request.json
+    filename = data.get('filename')
+    selectedGlycan = data.get('selectedGlycanOption')
+     # Assuming you have the necessary pdb and algo modules and methods
+    protein = pdb.parse(f'{downloadLocation}{filename}')
+    df = pdb.to_DF(protein)
+    sequence_with_info, sequences = pdb.get_sequence_from_pdb(f'{downloadLocation}{filename}')
+    spots = pdb.find_glycosylation_spots_N(sequence_with_info)
+    selectedGlycans = {}
+    for i in spots:
+            resname = df.loc[(df['ResId'] == int(i[1])) & (df['Chain'] == i[2]), 'ResName'].iloc[0]
+            key = f"{int(i[1])}_{i[2]}" 
+            selectedGlycans[key] = selectedGlycan
+    
+    # Extract glycans and glycosylation_locations from selectedGlycans
+    glycans = [glycan for glycan in selectedGlycans.values() if glycan]  # Filter out empty glycans
+    glycosylation_locations = [location for location in selectedGlycans.keys()]
+   
+   
+    g, clash , box = algo.attach_skip(protein, glycans, glycosylation_locations)
+    outputshortfilepath = f'{filename}_glycosylated_{time.time()}.pdb'
+    outputfilepath = f'{downloadLocation}{outputshortfilepath}'
+    
+    pdb.exportPDB(outputfilepath, pdb.to_normal(g))
+
+    return jsonify({'output':outputshortfilepath, 'clash': clash, 'box': box})
+
+@app.route('/api/process_pdb', methods=['POST'])
+def process_pdb():
+    downloadLocation = config.upload_dir
+
+    # Extract data from the JSON payload
+    data = request.json
+    uniprotID = data.get('uniprotID')
+    selectedGlycans = data.get('selectedGlycans')
+
+    # Extract glycans and glycosylation_locations from selectedGlycans
+    glycans = [glycan for glycan in selectedGlycans.values() if glycan]  # Filter out empty glycans
+    glycosylation_locations = [location for location in selectedGlycans.keys()]
+   
+    # Assuming you have the necessary pdb and algo modules and methods
+    protein = pdb.parse(f'{downloadLocation}{uniprotID}')
+    g, clash , box = algo.attach(protein, glycans, glycosylation_locations)
+    outputshortfilepath = f'{uniprotID}_glycosylated_{time.time()}.pdb'
+    outputfilepath = f'{downloadLocation}{outputshortfilepath}'
+    
+    pdb.exportPDB(outputfilepath, pdb.to_normal(g))
+
+    return jsonify({'output':outputshortfilepath, 'clash': clash, 'box': box})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=8000)
