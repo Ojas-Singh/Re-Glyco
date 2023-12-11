@@ -1,5 +1,5 @@
-data_dir = "DB/"
-upload_dir = "output/"
+data_dir = "/mnt/database/DB/"
+upload_dir = "/mnt/database/server_dir/"
 domain_name = "https://glycoshape.io"
 N_linked = {"Res":["ASN"],"phi": (-130,-63),"psi":(152,205)}
 O_linked = {"Res":["SER","THR"],"phi": (65,86),"psi":(111,164)}
@@ -15,7 +15,7 @@ ASN = {"link": "beta"  , "A": ["CB"], "B": ["CG"], "C": ["ND2"], "D": ["C1"], "E
 THR = {"link": "alpha" , "A": ["CA"], "B": ["CB"], "C": ["OG1","OG"], "D": ["C1"], "E": ["O5"],
         "sugars": {
         "GalNAc": {"phi": (55,83), "psi":(86,142),"link": "alpha"},
-        "Fuc": {"phi": (274,304), "psi":(148,182),"link": "alpha"},
+        "Fuc": {"phi": (276,305), "psi":(145,187),"link": "alpha"},
         "Man": {"phi": (61,88), "psi":(88,150),"link": "alpha"},
         "GlcNAc": {"phi": (143,221), "psi":(171,193),"link": "alpha"},
         }

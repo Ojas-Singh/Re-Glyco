@@ -102,22 +102,23 @@ def get_number_after_underscore(filename):
     return int(filename.split("_")[1].strip("cluster")[0])
 
 def sampling(Glycanid,linkage):
-    folder_path = config.data_dir+Glycanid+"/"
+    folder_path = config.data_dir+Glycanid+"/PDB_format/"
     ending =""
     if linkage == "alpha":
-        ending="alpha.pdb"
+        ending="alpha.PDB.pdb"
     elif linkage == "beta":
-        ending="beta.pdb"
+        ending="beta.PDB.pdb"
     filenames = os.listdir(folder_path)
     pdb_files = [filename for filename in filenames if filename.endswith(ending)]
     sorted_pdb_files = sorted(pdb_files, key=get_number_after_underscore,reverse=True)
     all_pdbs=[]
     for i in sorted_pdb_files:
-        all_pdbs.append(pdb.to_DF(pdb.parse(folder_path+i)))
+        all_pdbs.append(pdb.to_DF(pdb.parse_gly(folder_path+i)))
     loaded = np.load(config.data_dir+Glycanid+"/output/torparts.npz",allow_pickle=True)
     return all_pdbs,loaded
 
 def attach_skip(protein,glycans,glycosylation_locations):
+    link_pairs =[]
     clashes=[]
     protein_df= pdb.to_DF(protein)
     glycoprotein_final = copy.deepcopy(protein_df)
@@ -134,21 +135,23 @@ def attach_skip(protein,glycans,glycosylation_locations):
             target_Chain = str(glycosylation_locations[i].split("_")[1])
         resname =protein_df.loc[(protein_df['ResId'] == target_ResId) & (protein_df['Chain'] == target_Chain), 'ResName'].iloc[0] 
         residue_data = RESIDUE_MAP.get(resname)
-        glycoprotein_final_, Parr, box ,clash = attach_glycan(glycoprotein_final, glycan= glycans[i], linkage= residue_data, target_ResId = target_ResId,target_Chain = target_Chain,glycan_chain=currentGlycanChain)
+        glycoprotein_final_, Parr, box ,clash ,link_pair = attach_glycan(glycoprotein_final, glycan= glycans[i], linkage= residue_data, target_ResId = target_ResId,target_Chain = target_Chain,glycan_chain=currentGlycanChain)
         Box += box
         clashes.append(clash)
         if not clash:
             glycoprotein_final = glycoprotein_final_
             currentGlycanChain = chr(ord(currentGlycanChain) + 1) 
+            link_pairs.append(link_pair)
         else:
             pass
     Box += f"Finished in {time.time() -s } seconds"
-    return glycoprotein_final,any(clashes), Box
+    return glycoprotein_final,any(clashes), Box,link_pairs
 
 
 
 
 def attach(protein,glycans,glycosylation_locations):
+    link_pairs=[]
     clashes=[]
     protein_df= pdb.to_DF(protein)
     glycoprotein_final = copy.deepcopy(protein_df)
@@ -165,28 +168,39 @@ def attach(protein,glycans,glycosylation_locations):
             target_Chain = str(glycosylation_locations[i].split("_")[1])
         resname =protein_df.loc[(protein_df['ResId'] == target_ResId) & (protein_df['Chain'] == target_Chain), 'ResName'].iloc[0] 
         residue_data = RESIDUE_MAP.get(resname)
-        glycoprotein_final, Parr, box ,clash = attach_glycan(glycoprotein_final, glycan= glycans[i], linkage= residue_data, target_ResId = target_ResId,target_Chain = target_Chain,glycan_chain=currentGlycanChain)
+        glycoprotein_final, Parr, box ,clash, link_pair = attach_glycan(glycoprotein_final, glycan= glycans[i], linkage= residue_data, target_ResId = target_ResId,target_Chain = target_Chain,glycan_chain=currentGlycanChain)
+        link_pairs.append(link_pair)
         Box += box
         clashes.append(clash)
         currentGlycanChain = chr(ord(currentGlycanChain) + 1) 
     Box += f"Finished in {time.time() -s } seconds"
-    return glycoprotein_final,any(clashes), Box
+    return glycoprotein_final,any(clashes), Box ,link_pairs
 
 
 
 def attach_glycan(glycoprotein_final, glycan, linkage, target_ResId,target_Chain,glycan_chain):
     
     protein_df = glycoprotein_final
+    
     Parr=glycoprotein_final[['X','Y','Z']].to_numpy(dtype=float)
+    protein_df.to_csv('df.csv')
+    # print(protein_df.to_string())
+    
     last_sugar_residue =  re.split(r'\)|\]', glycan)[-1]
     psisd = linkage["sugars"][last_sugar_residue]["psi"]
     phisd = linkage["sugars"][last_sugar_residue]["phi"]
     link  = linkage["sugars"][last_sugar_residue]["link"]
 
-    CB  = protein_df.loc[(protein_df['Chain']==target_Chain) & (protein_df['ResId']==target_ResId) & (protein_df['Name'].isin(linkage["A"])),['Number']].iloc[0]['Number'] -1
-    CG  = protein_df.loc[(protein_df['Chain']==target_Chain) & (protein_df['ResId']==target_ResId) & (protein_df['Name'].isin(linkage["B"])),['Number']].iloc[0]['Number'] -1
-    ND2 = protein_df.loc[(protein_df['Chain']==target_Chain) & (protein_df['ResId']==target_ResId) & (protein_df['Name'].isin(linkage["C"])),['Number']].iloc[0]['Number'] -1
+    # CB  = protein_df.loc[(protein_df['Chain']==target_Chain) & (protein_df['ResId']==target_ResId) & (protein_df['Name'].isin(linkage["A"])),['Number']].iloc[0]['Number'] -1
+    # CG  = protein_df.loc[(protein_df['Chain']==target_Chain) & (protein_df['ResId']==target_ResId) & (protein_df['Name'].isin(linkage["B"])),['Number']].iloc[0]['Number'] -1
+    # ND2 = protein_df.loc[(protein_df['Chain']==target_Chain) & (protein_df['ResId']==target_ResId) & (protein_df['Name'].isin(linkage["C"])),['Number']].iloc[0]['Number'] -1
     
+    CB = protein_df.index[(protein_df['Chain'] == target_Chain) & (protein_df['ResId'] == target_ResId) & (protein_df['Name'].isin(linkage["A"]))][0]
+    CG = protein_df.index[(protein_df['Chain'] == target_Chain) & (protein_df['ResId'] == target_ResId) & (protein_df['Name'].isin(linkage["B"]))][0]
+    ND2 = protein_df.index[(protein_df['Chain'] == target_Chain) & (protein_df['ResId'] == target_ResId) & (protein_df['Name'].isin(linkage["C"]))][0]
+
+    link_pair=(ND2,len(Parr))
+
     if glycan == "None":
         return glycoprotein_final, Parr, box
     else:
@@ -196,6 +210,9 @@ def attach_glycan(glycoprotein_final, glycan, linkage, target_ResId,target_Chain
         C1 = G.loc[(G['ResId']==2) & (G['Name']== 'C1'),['Number']].iloc[0]['Number'] -1
         O5 = G.loc[(G['ResId']==2) & (G['Name']== 'O5'),['Number']].iloc[0]['Number'] -1
         O1 = G.loc[(G['ResId']==1) & (G['Name']== 'O1'),['Number']].iloc[0]['Number'] -1
+
+        
+
         Garr = G[['X','Y','Z']].to_numpy(dtype=float)
         torsionpoints = loaded["a"]
         torsionparts  = loaded["b"]
@@ -238,7 +255,8 @@ def attach_glycan(glycoprotein_final, glycan, linkage, target_ResId,target_Chain
         G = G.drop([0,1])
         G["Number"] = glycoprotein_final["Number"].iloc[-1] + G["Number"] 
         G["Chain"] = glycan_chain
+        # G["Chain"] = target_Chain
         glycoprotein_final= pd.concat([glycoprotein_final,G])
         Parr=glycoprotein_final[['X','Y','Z']].to_numpy(dtype=float)
 
-        return glycoprotein_final, Parr, box , clash
+        return glycoprotein_final, Parr, box , clash ,link_pair

@@ -1,20 +1,24 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 import requests
 import sys, time
 import os,json
 import time
+from datetime import datetime
 import config
 from lib import pdb,algo,prep
 from thefuzz import fuzz
+import re
 
 
 
 
 app = Flask(__name__)
+
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000
 CORS(app)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app, supports_credentials=True)
 
 
 def load_glycan_data(directory_path):
@@ -38,16 +42,14 @@ def load_glycan_data(directory_path):
     N_Glycans =  data.get('N', [])
     O_Glycans =  data.get('O', [])
     Oligomannose = data.get('Oligomannose',[])
-    try:
-        with open(directory_path+'GAG.json', 'r') as file:
-            data2 = json.load(file)
-        GAGs= data2.get('GAG', [])
-    except:
-        GAGs =[]
-    return glycan_data, wurcs_with_filename, N_Glycans, O_Glycans, GAGs , Oligomannose
+    GAGs= data.get('GAG', [])
+    Complex = data.get('Complex',[])
+    Hybrid = data.get('Hybrid',[])
+   
+    return glycan_data, wurcs_with_filename, N_Glycans, O_Glycans, GAGs , Oligomannose, Complex, Hybrid
 
 
-glycans_with_filename, wurcs_with_filename, N_Glycans, O_Glycans, GAGs, Oligomannose = load_glycan_data(config.data_dir)
+glycans_with_filename, wurcs_with_filename, N_Glycans, O_Glycans, GAGs, Oligomannose, Complex, Hybrid = load_glycan_data(config.data_dir)
 
 def get_filtered_glycanlist(path, residue_name):
     try:
@@ -140,6 +142,10 @@ def search():
             l = GAGs
         elif string == 'Oligomannose':
             l = Oligomannose
+        elif string == 'Complex':
+            l = Complex
+        elif string == 'Hybrid':
+            l = Hybrid
         else:
             # For other search strings
             if os.path.exists(config.data_dir):
@@ -304,11 +310,15 @@ def process_uniprot():
 
     # Assuming you have the necessary pdb and algo modules and methods
     protein = pdb.parse(f'{downloadLocation}{uniprotID}.pdb')
-    g, clash, box = algo.attach(protein, glycans, glycosylation_locations)
-    outputshortfilepath = f'{uniprotID}_glycosylated_{time.time()}.pdb'
+    g, clash, box,link_pairs = algo.attach(protein, glycans, glycosylation_locations)
+    
+    # outputshortfilepath = f'{uniprotID}_glycosylated_{time.time()}.pdb'
+    now = datetime.now()
+    outputshortfilepath = f'{uniprotID.strip(".pdb")}_reglyco_{now.strftime("%Y%m%d%H%M")}.pdb'
+    
     outputfilepath = f'{downloadLocation}{outputshortfilepath}'
     
-    pdb.exportPDB(outputfilepath, pdb.to_normal(g))
+    pdb.exportPDB(outputfilepath, pdb.to_normal(g), link_pairs)
     
     return jsonify({'output':outputshortfilepath, 'clash': clash, 'box': box})
 
@@ -379,11 +389,14 @@ def one_uniprot():
 
     # Assuming you have the necessary pdb and algo modules and methods
     protein = pdb.parse(f'{downloadLocation}{uniprotID}.pdb')
-    g, clash, box = algo.attach(protein, glycans, glycosylation_locations)
-    outputshortfilepath = f'{uniprotID}_glycosylated_{time.time()}.pdb'
+    g, clash, box,link_pairs = algo.attach(protein, glycans, glycosylation_locations)
+    # outputshortfilepath = f'{uniprotID}_glycosylated_{time.time()}.pdb'
+    now = datetime.now()
+    outputshortfilepath = f'{uniprotID.strip(".pdb")}_reglyco_{now.strftime("%Y%m%d%H%M")}.pdb'
+    
     outputfilepath = f'{downloadLocation}{outputshortfilepath}'
     
-    pdb.exportPDB(outputfilepath, pdb.to_normal(g))
+    pdb.exportPDB(outputfilepath, pdb.to_normal(g),link_pairs)
     
     return jsonify({'output':outputshortfilepath, 'clash': clash, 'box': box})
 
@@ -431,14 +444,151 @@ def upload_pdb():
         return jsonify({'uniprot':f'{file.filename}','glycosylation_locations': data, 'requestURL': f'https://glycoshape.io/output/{file.filename}', 'configuration' : final})
     return jsonify(error="Invalid file type"), 400
 
-@app.route('/api/scanner_pdb', methods=['POST'])
-def scanner_pdb():
+@app.route('/api/oneshot_pdb', methods=['POST'])
+def oneshot_pdb():
     downloadLocation = config.upload_dir
 
     # Extract data from the JSON payload
     data = request.json
-    filename = data.get('filename')
+    customPDB = data.get('customPDB')
+    if customPDB:
+        filename = data.get('filename')
+    else:
+        filename = data.get('filename')+".pdb"
+    result_residue = data.get('result')
     selectedGlycan = data.get('selectedGlycanOption')
+     # Assuming you have the necessary pdb and algo modules and methods
+    protein = pdb.parse(f'{downloadLocation}{filename}')
+    selectedGlycans = {}
+    for item in result_residue:
+        if item.get('clash_solved', False):
+            residue = item.get('residue', '')
+            if residue:
+                # Insert an underscore before the last character
+                formatted_residue = residue[:-1] + '_' + residue[-1]
+                selectedGlycans[formatted_residue] = selectedGlycan
+    
+    # Extract glycans and glycosylation_locations from selectedGlycans
+    glycans = [glycan for glycan in selectedGlycans.values() if glycan]  # Filter out empty glycans
+    glycosylation_locations = [location for location in selectedGlycans.keys()]
+   
+   
+    g, clash , box ,link_pairs= algo.attach_skip(protein, glycans, glycosylation_locations)
+    # outputshortfilepath = f'{filename}_glycosylated_{time.time()}.pdb'
+    now = datetime.now()
+    outputshortfilepath = f'{filename.strip(".pdb")}_reglyco_{now.strftime("%Y%m%d%H%M")}.pdb'
+    
+    outputfilepath = f'{downloadLocation}{outputshortfilepath}'
+    
+    pdb.exportPDB(outputfilepath, pdb.to_normal(g),link_pairs)
+
+    return jsonify({'output':outputshortfilepath, 'clash': clash, 'box': box})
+
+@app.route('/api/process_pdb', methods=['POST'])
+def process_pdb():
+    downloadLocation = config.upload_dir
+
+    # Extract data from the JSON payload
+    data = request.json
+    uniprotID = data.get('uniprotID')
+    selectedGlycans = data.get('selectedGlycans')
+
+    # Extract glycans and glycosylation_locations from selectedGlycans
+    glycans = [glycan for glycan in selectedGlycans.values() if glycan]  # Filter out empty glycans
+    glycosylation_locations = [location for location in selectedGlycans.keys()]
+    # print(glycosylation_locations)
+    # Assuming you have the necessary pdb and algo modules and methods
+    protein = pdb.parse(f'{downloadLocation}{uniprotID}')
+    g, clash , box,link_pairs = algo.attach(protein, glycans, glycosylation_locations)
+    # outputshortfilepath = f'{uniprotID}_glycosylated_{time.time()}.pdb'
+    now = datetime.now()
+    outputshortfilepath = f'{uniprotID.strip(".pdb")}_reglyco_{now.strftime("%Y%m%d%H%M")}.pdb'
+    
+    
+    outputfilepath = f'{downloadLocation}{outputshortfilepath}'
+    
+    pdb.exportPDB(outputfilepath, pdb.to_normal(g),link_pairs)
+
+    return jsonify({'output':outputshortfilepath, 'clash': clash, 'box': box})
+
+
+@app.route('/api/scan', methods=['POST'])
+def scan():
+    downloadLocation = config.upload_dir
+
+    # Extract data from the JSON payload
+    data = request.json
+    customPDB = data.get('customPDB')
+    if customPDB:
+        filename = data.get('filename')
+    else:
+        filename = data.get('filename')+".pdb"
+    selectedGlycan = "GlcNAc"
+     # Assuming you have the necessary pdb and algo modules and methods
+    protein = pdb.parse(f'{downloadLocation}{filename}')
+    df = pdb.to_DF(protein)
+    sequence_with_info, sequences = pdb.get_sequence_from_pdb(f'{downloadLocation}{filename}')
+    spots = pdb.find_glycosylation_spots_N(sequence_with_info)
+    selectedGlycans = {}
+    for i in spots:
+            resname = df.loc[(df['ResId'] == int(i[1])) & (df['Chain'] == i[2]), 'ResName'].iloc[0]
+            key = f"{int(i[1])}_{i[2]}" 
+            selectedGlycans[key] = selectedGlycan
+    
+    # Extract glycans and glycosylation_locations from selectedGlycans
+    glycans = [glycan for glycan in selectedGlycans.values() if glycan]  # Filter out empty glycans
+    glycosylation_locations = [location for location in selectedGlycans.keys()]
+   
+    g, clash , box,link_pairs = algo.attach_skip(protein, glycans, glycosylation_locations)
+
+    # Regex pattern to capture the relevant data
+    pattern = re.compile(
+        r"Residue :\s*(\d+[A-Z])\n\s*(.*?) has \d+ Clusters"
+        r"(.*?)(?:Clash Solved for (.*?) at residue :\1 with phi :\s*(\d+) and psi :\s*(-?\d+), cluster (\d+)|Clash exist for (.*?) at residue :\1 with phi :\s*(\d+) and psi :\s*(-?\d+), cluster (\d+))",
+        re.DOTALL
+    )
+    
+    # Find all matches
+    matches = pattern.findall(box)
+    
+    # Process matches to build the JSON structure
+    results = []
+
+    for match in matches:
+        residue, glycan, _, solved_glycan, phi, psi, cluster, exist_glycan, exist_phi, exist_psi, exist_cluster = match
+        result = {
+            'residue': residue,
+            'glycan': glycan or solved_glycan or exist_glycan,
+            'clash_solved': bool(solved_glycan),
+            'phi': int(phi or exist_phi),
+            'psi': int(psi or exist_psi),
+            'cluster': int(cluster or exist_cluster)
+        }
+        results.append(result)
+    now = datetime.now()
+    outputshortfilepath = f'{filename.strip(".pdb")}_reglyco_{now.strftime("%Y%m%d%H%M")}.pdb'
+    outputfilepath = f'{downloadLocation}{outputshortfilepath}'
+    
+    pdb.exportPDB(outputfilepath, pdb.to_normal(g),link_pairs)
+
+    return jsonify({'output':outputshortfilepath, 'clash': clash, 'box': box, 'results': results})
+
+
+@app.route('/api/maturation', methods=['POST'])
+def maturation():
+    downloadLocation = config.upload_dir
+
+    # Extract data from the JSON payload
+    data = request.json
+    customPDB = data.get('customPDB')
+    if customPDB:
+        filename = data.get('filename')
+    else:
+        filename = data.get('filename')+".pdb"
+    residue = data.get('selectedResidueMaturation')
+    selectedGlycan = "GlcNAc"
+
+    
      # Assuming you have the necessary pdb and algo modules and methods
     protein = pdb.parse(f'{downloadLocation}{filename}')
     df = pdb.to_DF(protein)
@@ -455,36 +605,127 @@ def scanner_pdb():
     glycosylation_locations = [location for location in selectedGlycans.keys()]
    
    
-    g, clash , box = algo.attach_skip(protein, glycans, glycosylation_locations)
-    outputshortfilepath = f'{filename}_glycosylated_{time.time()}.pdb'
+    g, clash , box , link_pairs = algo.attach_skip(protein, glycans, glycosylation_locations)
+
+    # Regex pattern to capture the relevant data
+    pattern = re.compile(
+        r"Residue :\s*(\d+[A-Z])\n\s*(.*?) has \d+ Clusters"
+        r"(.*?)(?:Clash Solved for (.*?) at residue :\1 with phi :\s*(\d+) and psi :\s*(-?\d+), cluster (\d+)|Clash exist for (.*?) at residue :\1 with phi :\s*(\d+) and psi :\s*(-?\d+), cluster (\d+))",
+        re.DOTALL
+    )
+    
+    # Find all matches
+    matches = pattern.findall(box)
+    
+    # Process matches to build the JSON structure
+    results = []
+
+    for match in matches:
+        residue, glycan, _, solved_glycan, phi, psi, cluster, exist_glycan, exist_phi, exist_psi, exist_cluster = match
+        result = {
+            'residue': residue,
+            'glycan': glycan or solved_glycan or exist_glycan,
+            'clash_solved': bool(solved_glycan),
+            'phi': int(phi or exist_phi),
+            'psi': int(psi or exist_psi),
+            'cluster': int(cluster or exist_cluster)
+        }
+        results.append(result)
+    
+    now = datetime.now()
+    outputshortfilepath = f'{filename.strip(".pdb")}_reglyco_{now.strftime("%Y%m%d%H%M")}.pdb'
     outputfilepath = f'{downloadLocation}{outputshortfilepath}'
     
-    pdb.exportPDB(outputfilepath, pdb.to_normal(g))
+    pdb.exportPDB(outputfilepath, pdb.to_normal(g),link_pairs)
 
-    return jsonify({'output':outputshortfilepath, 'clash': clash, 'box': box})
+    return jsonify({'output':outputshortfilepath, 'clash': clash, 'box': box, 'results': results})
 
-@app.route('/api/process_pdb', methods=['POST'])
-def process_pdb():
+@app.route('/api/log', methods=['GET'])
+def log_visitor():
+    # Check for existing cookie
+    if request.cookies.get('visited'):
+        return 'Already logged today', 200
+
+    # Get client IP address
+    if request.headers.getlist("X-Forwarded-For"):
+        ip = request.headers.getlist("X-Forwarded-For")[0]
+    else:
+        ip = request.remote_addr
+
+    # Log IP and timestamp
+    timestamp = datetime.now()
+    with open("visitors.log", "a") as log_file:
+        log_file.write(f"{timestamp}: {ip}\n")
+
+    # Create a response and set a cookie with 24-hour expiration
+    response = make_response("Logged", 200)
+    response.set_cookie('visited', 'yes', max_age=86400)  # 86400 seconds = 24 hours
+    return response
+
+
+
+@app.route('/api/upload_pdb_swap', methods=['POST'])
+def upload_pdb_swap():
+    upload_dir = config.upload_dir
+    if 'pdbFile' not in request.files:
+        return jsonify(error="No file part"), 400
+    file = request.files['pdbFile']
+    # Check if the post request has the file part
+    if file.filename == '':
+        return jsonify(error="No selected file"), 400
+
+    if file :
+        filename = os.path.join(upload_dir, file.filename)
+        file.save(filename)
+        pdb.remove_hydrogens(filename,filename)
+        
+        base_dir = config.data_dir
+        if os.path.exists(base_dir):
+            dir_list = [d for d in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, d))]
+
+        outputfilename = f'{filename}_glycosylated.pdb'
+        protein = pdb.parse(filename)
+        df = pdb.to_DF(protein)
+        final = []
+        sequence_with_info, sequences = pdb.get_sequence_from_pdb(filename)
+        spots = pdb.find_glycosylation_spots_N(sequence_with_info)
+        for i in spots:
+             resname = df.loc[(df['ResId'] == int(i[1])) & (df['Chain'] == i[2]), 'ResName'].iloc[0]
+             output = {  
+                        'residueTag': int(i[0]),
+                        'residueID': int(i[1]),
+                        'residueName': resname,
+                        'residueChain': i[2],
+                        'glycanIDs':  [True,False],
+                            }  
+             final.append(output)
+        data = {
+            "sequenceLength": len(sequence_with_info),
+            "sequence": sequences ,
+            "glycosylations": spots,
+        }
+        return jsonify({'uniprot':f'{file.filename}','glycosylation_locations': data, 'requestURL': f'https://glycoshape.io/output/{file.filename}', 'configuration' : final})
+    return jsonify(error="Invalid file type"), 400
+
+
+@app.route('/api/process_pdb_swap', methods=['POST'])
+def process_pdb_swap():
     downloadLocation = config.upload_dir
 
     # Extract data from the JSON payload
     data = request.json
     uniprotID = data.get('uniprotID')
     selectedGlycans = data.get('selectedGlycans')
+    selected_list = [location for location in selectedGlycans.keys()]
+    
 
-    # Extract glycans and glycosylation_locations from selectedGlycans
-    glycans = [glycan for glycan in selectedGlycans.values() if glycan]  # Filter out empty glycans
-    glycosylation_locations = [location for location in selectedGlycans.keys()]
-   
-    # Assuming you have the necessary pdb and algo modules and methods
-    protein = pdb.parse(f'{downloadLocation}{uniprotID}')
-    g, clash , box = algo.attach(protein, glycans, glycosylation_locations)
-    outputshortfilepath = f'{uniprotID}_glycosylated_{time.time()}.pdb'
+    now = datetime.now()
+    outputshortfilepath = f'{uniprotID.strip(".pdb")}_swapped_{now.strftime("%Y%m%d%H%M")}.pdb'
     outputfilepath = f'{downloadLocation}{outputshortfilepath}'
     
-    pdb.exportPDB(outputfilepath, pdb.to_normal(g))
+    pdb.swap_residues(f'{downloadLocation}{uniprotID}',selected_list,outputfilepath)
 
-    return jsonify({'output':outputshortfilepath, 'clash': clash, 'box': box})
+    return jsonify({'output':outputshortfilepath, 'clash': False, 'box': "No error."})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)
