@@ -36,6 +36,11 @@ Modify the config.py to locate the GlycoShape Database directory.
 gunicorn -w 4 api:app --timeout 900
 ```
 
+# Citation
+
+All of the data provided is freely available for academic use under Creative Commons Attribution 4.0 (CC BY-NC-ND 4.0 Deed) licence terms. Please contact us at elisa.fadda@mu.ie for Commercial licence. If you use this resource, please cite the following papers:
+
+Callum M Ives and Ojas Singh et al. Restoring Protein Glycosylation with GlycoShape bioRxiv (2023).
 
 # Future roadmap
 - CLI interface
