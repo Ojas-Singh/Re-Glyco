@@ -17,6 +17,7 @@ panic = "abort"
 pyo3 = { version = "0.19.2", features = ["extension-module"] }
 rayon = "1.8.0"
 rand = "0.8.5"
+ndarray = "0.15.6"
 
 [build-dependencies]
 maturin = "0.11.0"

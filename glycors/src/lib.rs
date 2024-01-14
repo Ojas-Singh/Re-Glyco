@@ -4,6 +4,44 @@ use std::f64::consts::PI;
 use rand::distributions::{Uniform, Distribution};
 use rayon::prelude::*;
 use rand::Rng;
+use ndarray::Array2;
+use pyo3::prelude::*;
+
+// Function to calculate Euclidean distance between two points
+fn euclidean_distance(p1: &[f64], p2: &[f64]) -> f64 {
+    p1.iter().zip(p2.iter()).map(|(a, b)| (a - b).powi(2)).sum::<f64>().sqrt()
+}
+
+// Function to filter Parr and remap indices
+fn filter_parr_and_remap_indices(
+    garr: &[Vec<f64>], 
+    parr: &[Vec<f64>], 
+    threshold: f64,
+    cb: usize,
+    cg: usize,
+    nd2: usize
+) -> (Vec<Vec<f64>>, usize, usize, usize) {
+    let mut filtered_parr = Vec::new();
+    let mut remapped_indices = (None, None, None);
+
+    for (i, p) in parr.iter().enumerate() {
+        if garr.iter().any(|g| euclidean_distance(g, p) <= threshold) {
+            filtered_parr.push(p.clone());
+            let new_index = filtered_parr.len() - 1;
+            if i == cb { remapped_indices.0 = Some(new_index); }
+            if i == cg { remapped_indices.1 = Some(new_index); }
+            if i == nd2 { remapped_indices.2 = Some(new_index); }
+        }
+    }
+
+    let remapped_cb = remapped_indices.0.expect("Index cb not found in filtered array");
+    let remapped_cg = remapped_indices.1.expect("Index cg not found in filtered array");
+    let remapped_nd2 = remapped_indices.2.expect("Index nd2 not found in filtered array");
+
+    (filtered_parr, remapped_cb, remapped_cg, remapped_nd2)
+}
+
+
 
 #[inline(always)]
 fn length(v: &Vec<f64>) -> f64 {
@@ -14,13 +52,13 @@ fn length(v: &Vec<f64>) -> f64 {
 #[inline(always)]
 fn matrix_multiply(a: &Vec<Vec<f64>>, b: &Vec<f64>) -> Vec<f64> {
     assert_eq!(b.len(), 3);
+    assert_eq!(a.len(), 3);
+    assert!(a.iter().all(|row| row.len() == 3));
 
     let mut result = vec![0.0; 3];
 
-    for i in 0..3 {
-        for j in 0..3 {
-            result[i] += a[i][j] * b[j];
-        }
+    for (i, row) in a.iter().enumerate() {
+        result[i] = row.iter().zip(b).map(|(&a_ij, &b_j)| a_ij * b_j).sum();
     }
 
     result
@@ -62,19 +100,18 @@ fn cdist(a: &Vec<Vec<f64>>, b: &Vec<Vec<f64>>) -> Vec<Vec<f64>> {
     assert_eq!(a[0].len(), b[0].len());
 
     let (a_rows, a_cols) = (a.len(), a[0].len());
-    let (b_rows, _) = (b.len(), b[0].len());
+    let b_rows = b.len();
 
     let c: Vec<Vec<f64>> = (0..a_rows)
         .into_par_iter()
         .map(|i| {
-            let mut c_row = vec![0.0; b_rows];
+            let mut c_row = Vec::with_capacity(b_rows);
             for j in 0..b_rows {
-                let mut acc = 0.0;
-                for k in 0..a_cols {
+                let acc = (0..a_cols).map(|k| {
                     let diff = a[i][k] - b[j][k];
-                    acc += diff * diff;
-                }
-                c_row[j] = acc.sqrt();
+                    diff * diff
+                }).sum::<f64>().sqrt();
+                c_row.push(acc);
             }
             c_row
         })
@@ -83,20 +120,20 @@ fn cdist(a: &Vec<Vec<f64>>, b: &Vec<Vec<f64>>) -> Vec<Vec<f64>> {
     c
 }
 
+
 #[inline(always)]
 fn steric_fast(garr: &Vec<Vec<f64>>, parr: &Vec<Vec<f64>>) -> f64 {
     let c = cdist(garr, parr);
     let threshold = 1.7;
-
     let mut result = 1.0;
 
-    for i in 3..c.len() {
-        for elem in &c[i] {
-            if *elem < threshold {
-                result += 200.0 * (-elem.powi(2)).exp();
-            }
-        }
-    }
+    // Parallel processing if the dataset is large
+    result += (3..c.len()).into_par_iter().map(|i| {
+        c[i].iter()
+            .filter(|&&elem| elem < threshold)
+            .map(|&elem| 200.0 * (-elem.powi(2)).exp())
+            .sum::<f64>()
+    }).sum::<f64>();
 
     result
 }
@@ -224,6 +261,8 @@ pub fn opt_genetic(
         return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>("Invalid input ranges for phisd and/or psisd"));
     }
     
+    let (filtered_parr, new_cb, new_cg, new_nd2) = 
+        filter_parr_and_remap_indices(&garr, &parr, 15.0, cb, cg, nd2);
 
     let phi_range = Uniform::new(phisd.0, phisd.1);
     let psi_range = Uniform::new(psisd.0, psisd.1);
@@ -242,7 +281,7 @@ pub fn opt_genetic(
             .iter()
             .map(|&(phi, psi)| {
                 let mut garr_temp = garr.clone();
-                rr(phi, psi, cb, cg, nd2, c1, o5, &mut garr_temp, &parr);
+                rr(phi, psi, new_cb, new_cg, new_nd2, c1, o5, &mut garr_temp, &filtered_parr);
                 steric_fast(&garr_temp, &parr)
             })
             .collect();

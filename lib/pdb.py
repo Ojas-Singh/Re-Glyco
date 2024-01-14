@@ -126,7 +126,7 @@ def exportPDB(fout,pdbdata,link_pairs):
         if not gly:
             line=list("ATOM".ljust(80))
         else:
-            line=list("HETATM".ljust(80))
+            line=list("ATOM".ljust(80))
         line[6:10] = str(pdbdata[0][i]).rjust(5) 
         line[12:15] = str(pdbdata[1][i]).ljust(4) 
         line[17:19] = str(pdbdata[2][i]).rjust(3) 

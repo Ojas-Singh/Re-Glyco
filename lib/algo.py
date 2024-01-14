@@ -10,6 +10,22 @@ import config
 from config import RESIDUE_MAP
 import glycors
 
+def filter_and_map_indices(Garr, Parr, threshold=15):
+    # Function to calculate Euclidean distance between two points
+    def distance(point1, point2):
+        return np.sqrt(np.sum((point1 - point2) ** 2))
+
+    # Filter Parr to keep points within the threshold distance of any point in Garr
+    filtered_Parr = []
+    Parr_indices_map = {}  # Maps original indices in Parr to new indices in filtered_Parr
+
+    for i, p in enumerate(Parr):
+        if any(distance(p, g) <= threshold for g in Garr):
+            filtered_Parr.append(p)
+            Parr_indices_map[i] = len(filtered_Parr) - 1
+
+    return np.array(filtered_Parr), Parr_indices_map
+
 
 # @njit(fastmath=True)
 # def glycors.fastest_angle(p0,p1,p2):
@@ -32,9 +48,25 @@ def optwithwiggle(GarrM,O1,CB,CG,ND2,C1,O5,Parr,torsionpoints,torsionparts,phisd
         GarrF= GarrM
         phiF=0
         psiF=0
+        # Garr = GarrM
+        # Garr = Garr-Garr[O1]
+        # Garr = Garr + Parr[ND2]
+        # axis = np.cross(Parr[CG]-Parr[ND2],Garr[C1]-Parr[ND2])
+        # an=glycors.fastest_angle(Parr[CG],Parr[ND2],Garr[C1])
+        # theta = np.radians(random.uniform(130, 110) - an)
+        # Garr = Garr - Parr[ND2]
+        # M0 = glycors.rotation_mat(axis, theta)
+        # for i in range(len(Garr)):
+        #     Garr[i] = np.dot(M0,Garr[i])
+        # Garr = Garr + Parr[ND2]
+        # Parr_fast, indices_map = filter_and_map_indices(Garr, Parr)
+        # original_indices = [CB, CG, ND2]  # Replace with your indices
+        # new_indices = [indices_map[i] for i in original_indices if i in indices_map]
         if wiggle_method =="none":
             for i in range(wiggle_tries):
-                Garr = Garrfromtorsion(GarrM,torsionpoints,torsionparts,factor=0.1)
+                
+                # Garr = Garrfromtorsion(GarrM,torsionpoints,torsionparts,factor=0.1)
+                Garr = GarrM
                 Garr = Garr-Garr[O1]
                 Garr = Garr + Parr[ND2]
                 axis = np.cross(Parr[CG]-Parr[ND2],Garr[C1]-Parr[ND2])
@@ -45,6 +77,10 @@ def optwithwiggle(GarrM,O1,CB,CG,ND2,C1,O5,Parr,torsionpoints,torsionparts,phisd
                 for i in range(len(Garr)):
                     Garr[i] = np.dot(M0,Garr[i])
                 Garr = Garr + Parr[ND2]
+                # Parr_fast, indices_map = filter_and_map_indices(Garr, Parr)
+                # original_indices = [CB, CG, ND2]  # Replace with your indices
+                # new_indices = [indices_map[i] for i in original_indices if i in indices_map]
+                # phi,psi,ri = glycors.opt_genetic(new_indices[0],new_indices[1],new_indices[2],C1,O5,Garr,Parr_fast,psisd,phisd)
                 phi,psi,ri = glycors.opt_genetic(CB,CG,ND2,C1,O5,Garr,Parr,psisd,phisd)
                 if ri<r:
                     GarrF= Garr
@@ -87,6 +123,8 @@ def optwithwiggle(GarrM,O1,CB,CG,ND2,C1,O5,Parr,torsionpoints,torsionparts,phisd
                 for i in range(len(Garr)):
                     Garr[i] = np.dot(M0,Garr[i])
                 Garr = Garr + Parr[ND2]
+                # phi,psi,ri = glycors.opt_genetic(new_indices[0],new_indices[1],new_indices[2],C1,O5,Garr,Parr_fast,psisd,phisd)
+
                 phi,psi,ri = glycors.opt_genetic(CB,CG,ND2,C1,O5,Garr,Parr,psisd,phisd)
                 if ri<r:
                     GarrF= Garr
@@ -102,7 +140,7 @@ def get_number_after_underscore(filename):
     return int(filename.split("_")[1].strip("cluster")[0])
 
 def sampling(Glycanid,linkage):
-    folder_path = config.data_dir+Glycanid+"/PDB_format/"
+    folder_path = config.data_dir+Glycanid+"/PDB_format_HETATM/"
     ending =""
     if linkage == "alpha":
         ending="alpha.PDB.pdb"
@@ -183,8 +221,6 @@ def attach_glycan(glycoprotein_final, glycan, linkage, target_ResId,target_Chain
     protein_df = glycoprotein_final
     
     Parr=glycoprotein_final[['X','Y','Z']].to_numpy(dtype=float)
-    protein_df.to_csv('df.csv')
-    # print(protein_df.to_string())
     
     last_sugar_residue =  re.split(r'\)|\]', glycan)[-1]
     psisd = linkage["sugars"][last_sugar_residue]["psi"]

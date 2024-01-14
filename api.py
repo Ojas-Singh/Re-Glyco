@@ -106,6 +106,23 @@ def list_glycans():
     else:
         return jsonify({'error': 'Directory not found'})
     
+with open(f'{config.data_dir}GLYCOSHAPE.json', 'r') as file:
+    GDB_data = json.load(file)
+
+@app.route('/api/fetch_glytoucan', methods=['GET'])
+def fetch_glytoucan():
+    # Retrieve the ID from the request arguments
+    entry_id = request.args.get('id')
+
+    # Search for the entry with the given ID
+    entry = GDB_data.get(entry_id)
+
+    # Check if the entry exists
+    if entry:
+        return jsonify(entry)
+    else:
+        return jsonify({"error": "Entry not found"}), 404
+    
 
 @app.route('/api/search', methods=['POST'])
 def search():
