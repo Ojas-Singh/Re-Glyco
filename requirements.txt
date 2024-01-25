@@ -7,3 +7,4 @@ flask-cors
 gunicorn
 thefuzz
 tqdm
+MDAnalysis

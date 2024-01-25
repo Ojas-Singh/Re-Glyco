@@ -6,7 +6,7 @@ import os,json
 import time
 from datetime import datetime
 import config
-from lib import pdb,algo,prep
+from lib import pdb,algo,prep,ensemble
 from thefuzz import fuzz
 import re
 
@@ -19,6 +19,29 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000
 CORS(app)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 CORS(app, supports_credentials=True)
+
+
+default_glycan = {
+    "C-linked (Man) tryptophan": "Man",
+    "O-linked (Fuc...) serine": "Fuc",
+    "O-linked (Fuc...) threonine": "Fuc",
+    "O-linked (GalNAc...) serine": "Neu5Ac(a2-3)Gal(b1-3)GalNAc",
+    "O-linked (GalNAc...) threonine": "Neu5Ac(a2-3)Gal(b1-3)GalNAc",
+    "O-linked (Glc...) serine": "Glc",
+    "O-linked (Glc...) threonine": "Glc",
+    "O-linked (Man...) serine": "Neu5Ac(a2-3)Gal(b1-4)[Fuc(a1-3)]GlcNAc(b1-2)Man",
+    "O-linked (Man...) threonine": "Neu5Ac(a2-3)Gal(b1-4)[Fuc(a1-3)]GlcNAc(b1-2)Man",
+    "O-linked (Xyl...) serine": "Xyl",
+    "O-linked (Xyl...) threonine": "Xyl",
+    "O-linked (Xyl...) (chondroitin sulfate) serine": "GalNAc(b1-4)GlcA(b1-3)GalNAc(b1-4)GlcA(b1-3)GalNAc(b1-4)GlcA(b1-3)GalNAc(b1-4)GlcA(b1-3)Gal(b1-3)Gal(b1-4)Xyl",
+    "O-linked (Xyl...) (chondroitin sulfate) threonine": "GalNAc(b1-4)GlcA(b1-3)GalNAc(b1-4)GlcA(b1-3)GalNAc(b1-4)GlcA(b1-3)GalNAc(b1-4)GlcA(b1-3)Gal(b1-3)Gal(b1-4)Xyl",
+    "O-linked (GlcNAc) serine": "GlcNAc",
+    "O-linked (GlcNAc) threonine": "GlcNAc",
+    "N-linked (GlcNAc...) asparagine": "GlcNAc(b1-2)Man(a1-3)[GlcNAc(b1-2)Man(a1-6)]Man(b1-4)GlcNAc(b1-4)GlcNAc",
+    "N-linked (GlcNAc...) (complex) asparagine": "Neu5Ac(a2-6)Gal(b1-4)GlcNAc(b1-2)Man(a1-3)[Neu5Ac(a2-6)Gal(b1-4)GlcNAc(b1-2)Man(a1-6)]Man(b1-4)GlcNAc(b1-4)[Fuc(a1-6)]GlcNAc",
+    "N-linked (GlcNAc...) (hybrid) asparagine": "Neu5Ac(a2-6)Gal(b1-4)GlcNAc(b1-2)Man(a1-3)[Man(a1-3)[Man(a1-6)]Man(a1-6)]Man(b1-4)GlcNAc(b1-4)GlcNAc",
+    "N-linked (GlcNAc...) (high mannose) asparagine": "Man(a1-3)[Man(a1-6)]Man(a1-6)[Man(a1-3)]Man(b1-4)GlcNAc(b1-4)GlcNAc"
+}
 
 
 def load_glycan_data(directory_path):
@@ -360,27 +383,7 @@ def one_uniprot():
         sys.exit()
     uniprotResponseJSON = uniprotResponse.json()
     uniprotFeatures = uniprotResponseJSON["features"]
-    default_glycan = {
-    "C-linked (Man) tryptophan": "Man",
-    "O-linked (Fuc...) serine": "Fuc",
-    "O-linked (Fuc...) threonine": "Fuc",
-    "O-linked (GalNAc...) serine": "Neu5Ac(a2-3)Gal(b1-3)GalNAc",
-    "O-linked (GalNAc...) threonine": "Neu5Ac(a2-3)Gal(b1-3)GalNAc",
-    "O-linked (Glc...) serine": "Glc",
-    "O-linked (Glc...) threonine": "Glc",
-    "O-linked (Man...) serine": "Neu5Ac(a2-3)Gal(b1-4)[Fuc(a1-3)]GlcNAc(b1-2)Man",
-    "O-linked (Man...) threonine": "Neu5Ac(a2-3)Gal(b1-4)[Fuc(a1-3)]GlcNAc(b1-2)Man",
-    "O-linked (Xyl...) serine": "Xyl",
-    "O-linked (Xyl...) threonine": "Xyl",
-    "O-linked (Xyl...) (chondroitin sulfate) serine": "GalNAc(b1-4)GlcA(b1-3)GalNAc(b1-4)GlcA(b1-3)GalNAc(b1-4)GlcA(b1-3)GalNAc(b1-4)GlcA(b1-3)Gal(b1-3)Gal(b1-4)Xyl",
-    "O-linked (Xyl...) (chondroitin sulfate) threonine": "GalNAc(b1-4)GlcA(b1-3)GalNAc(b1-4)GlcA(b1-3)GalNAc(b1-4)GlcA(b1-3)GalNAc(b1-4)GlcA(b1-3)Gal(b1-3)Gal(b1-4)Xyl",
-    "O-linked (GlcNAc) serine": "GlcNAc",
-    "O-linked (GlcNAc) threonine": "GlcNAc",
-    "N-linked (GlcNAc...) asparagine": "GlcNAc(b1-2)Man(a1-3)[GlcNAc(b1-2)Man(a1-6)]Man(b1-4)GlcNAc(b1-4)GlcNAc",
-    "N-linked (GlcNAc...) (complex) asparagine": "Neu5Ac(a2-6)Gal(b1-4)GlcNAc(b1-2)Man(a1-3)[Neu5Ac(a2-6)Gal(b1-4)GlcNAc(b1-2)Man(a1-6)]Man(b1-4)GlcNAc(b1-4)[Fuc(a1-6)]GlcNAc",
-    "N-linked (GlcNAc...) (hybrid) asparagine": "Neu5Ac(a2-6)Gal(b1-4)GlcNAc(b1-2)Man(a1-3)[Man(a1-3)[Man(a1-6)]Man(a1-6)]Man(b1-4)GlcNAc(b1-4)GlcNAc",
-    "N-linked (GlcNAc...) (high mannose) asparagine": "Man(a1-3)[Man(a1-6)]Man(a1-6)[Man(a1-3)]Man(b1-4)GlcNAc(b1-4)GlcNAc"
-}
+    
 
     selectedGlycans = {}
 
@@ -591,72 +594,6 @@ def scan():
     return jsonify({'output':outputshortfilepath, 'clash': clash, 'box': box, 'results': results})
 
 
-@app.route('/api/maturation', methods=['POST'])
-def maturation():
-    downloadLocation = config.upload_dir
-
-    # Extract data from the JSON payload
-    data = request.json
-    customPDB = data.get('customPDB')
-    if customPDB:
-        filename = data.get('filename')
-    else:
-        filename = data.get('filename')+".pdb"
-    residue = data.get('selectedResidueMaturation')
-    selectedGlycan = "GlcNAc"
-
-    
-     # Assuming you have the necessary pdb and algo modules and methods
-    protein = pdb.parse(f'{downloadLocation}{filename}')
-    df = pdb.to_DF(protein)
-    sequence_with_info, sequences = pdb.get_sequence_from_pdb(f'{downloadLocation}{filename}')
-    spots = pdb.find_glycosylation_spots_N(sequence_with_info)
-    selectedGlycans = {}
-    for i in spots:
-            resname = df.loc[(df['ResId'] == int(i[1])) & (df['Chain'] == i[2]), 'ResName'].iloc[0]
-            key = f"{int(i[1])}_{i[2]}" 
-            selectedGlycans[key] = selectedGlycan
-    
-    # Extract glycans and glycosylation_locations from selectedGlycans
-    glycans = [glycan for glycan in selectedGlycans.values() if glycan]  # Filter out empty glycans
-    glycosylation_locations = [location for location in selectedGlycans.keys()]
-   
-   
-    g, clash , box , link_pairs = algo.attach_skip(protein, glycans, glycosylation_locations)
-
-    # Regex pattern to capture the relevant data
-    pattern = re.compile(
-        r"Residue :\s*(\d+[A-Z])\n\s*(.*?) has \d+ Clusters"
-        r"(.*?)(?:Clash Solved for (.*?) at residue :\1 with phi :\s*(\d+) and psi :\s*(-?\d+), cluster (\d+)|Clash exist for (.*?) at residue :\1 with phi :\s*(\d+) and psi :\s*(-?\d+), cluster (\d+))",
-        re.DOTALL
-    )
-    
-    # Find all matches
-    matches = pattern.findall(box)
-    
-    # Process matches to build the JSON structure
-    results = []
-
-    for match in matches:
-        residue, glycan, _, solved_glycan, phi, psi, cluster, exist_glycan, exist_phi, exist_psi, exist_cluster = match
-        result = {
-            'residue': residue,
-            'glycan': glycan or solved_glycan or exist_glycan,
-            'clash_solved': bool(solved_glycan),
-            'phi': int(phi or exist_phi),
-            'psi': int(psi or exist_psi),
-            'cluster': int(cluster or exist_cluster)
-        }
-        results.append(result)
-    
-    now = datetime.now()
-    outputshortfilepath = f'{filename.strip(".pdb")}_reglyco_{now.strftime("%Y%m%d%H%M")}.pdb'
-    outputfilepath = f'{downloadLocation}{outputshortfilepath}'
-    
-    pdb.exportPDB(outputfilepath, pdb.to_normal(g),link_pairs)
-
-    return jsonify({'output':outputshortfilepath, 'clash': clash, 'box': box, 'results': results})
-
 @app.route('/api/log', methods=['GET'])
 def log_visitor():
     # Check for existing cookie
@@ -744,5 +681,146 @@ def process_pdb_swap():
 
     return jsonify({'output':outputshortfilepath, 'clash': False, 'box': "No error."})
 
+
+@app.route('/api/oneshot_sasa', methods=['POST'])
+def oneshot_sasa():
+    downloadLocation = config.upload_dir
+
+    # Extract data from the JSON payload
+    data = request.json
+    customPDB = data.get('customPDB')
+    if customPDB:
+        filename = data.get('filename')
+    else:
+        filename = data.get('filename')+".pdb"
+    result_residue = data.get('result')
+    selectedGlycan = data.get('selectedGlycanOption')
+     # Assuming you have the necessary pdb and algo modules and methods
+    protein = pdb.parse(f'{downloadLocation}{filename}')
+    selectedGlycans = {}
+    for item in result_residue:
+        if item.get('clash_solved', False):
+            residue = item.get('residue', '')
+            if residue:
+                # Insert an underscore before the last character
+                formatted_residue = residue[:-1] + '_' + residue[-1]
+                selectedGlycans[formatted_residue] = selectedGlycan
+    
+    # Extract glycans and glycosylation_locations from selectedGlycans
+    glycans = [glycan for glycan in selectedGlycans.values() if glycan]  # Filter out empty glycans
+    glycosylation_locations = [location for location in selectedGlycans.keys()]
+   
+   
+    g, clash , box ,link_pairs, total_frames_with_data,lowest_frame= ensemble.attach(protein, glycans, glycosylation_locations)
+    now = datetime.now()
+    opath = f'{filename.strip(".pdb")}_reglyco_ensemble_{now.strftime("%Y%m%d%H%M")}'
+    outputshortfilepath=opath+".pdb"
+    outputpath = f'{downloadLocation}{opath}.pdb'
+    pdb.export_multi_PDB(total_frames_with_data, protein, lowest_frame, outputpath)
+    output_sasa =f'{filename.strip(".pdb")}_reglyco_sasa_{now.strftime("%Y%m%d%H%M")}.pdb'
+    output_sasa_path = f'{downloadLocation}{output_sasa}'
+    
+    ensemble.runSASA(outputpath,f'{downloadLocation}{opath}_first.xtc',f'{downloadLocation}{opath}_first.pdb',output_sasa_path)
+
+    
+    ensemble.sasa_molj(output_sasa,output_sasa_path.strip(".pdb")+".molj")
+
+    return jsonify({'output':outputshortfilepath,'output_sasa': output_sasa.strip(".pdb"), 'clash': clash, 'box': box})
+
+@app.route('/api/process_pdb_sasa', methods=['POST'])
+def process_pdb_sasa():
+    downloadLocation = config.upload_dir
+
+    # Extract data from the JSON payload
+    data = request.json
+    customPDB = data.get('customPDB')
+    if customPDB:
+        filename = data.get('filename')
+    else:
+        filename = data.get('filename')+".pdb"
+    selectedGlycans = data.get('selectedGlycans')
+
+    # Extract glycans and glycosylation_locations from selectedGlycans
+    glycans = [glycan for glycan in selectedGlycans.values() if glycan]  # Filter out empty glycans
+    glycosylation_locations = [location for location in selectedGlycans.keys()]
+    # print(glycosylation_locations)
+    # Assuming you have the necessary pdb and algo modules and methods
+    protein = pdb.parse(f'{downloadLocation}{filename}')
+   
+    g, clash , box ,link_pairs, total_frames_with_data,lowest_frame= ensemble.attach(protein, glycans, glycosylation_locations)
+    now = datetime.now()
+    opath = f'{filename.strip(".pdb")}_reglyco_ensemble_{now.strftime("%Y%m%d%H%M")}'
+    outputshortfilepath=opath+".pdb"
+    outputpath = f'{downloadLocation}{opath}.pdb'
+    pdb.export_multi_PDB(total_frames_with_data, protein, lowest_frame, outputpath)
+    output_sasa =f'{filename.strip(".pdb")}_reglyco_sasa_{now.strftime("%Y%m%d%H%M")}.pdb'
+    output_sasa_path = f'{downloadLocation}{output_sasa}'
+    
+    ensemble.runSASA(outputpath,f'{downloadLocation}{opath}_first.xtc',f'{downloadLocation}{opath}_first.pdb',output_sasa_path)
+
+    
+    ensemble.sasa_molj(output_sasa,output_sasa_path.strip(".pdb")+".molj")
+
+    return jsonify({'output':outputshortfilepath,'output_sasa': output_sasa.strip(".pdb"), 'clash': clash, 'box': box})
+
+
+@app.route('/api/one_uniprot_sasa', methods=['POST'])
+def one_uniprot_sasa():
+    downloadLocation = config.upload_dir
+
+    # Extract data from the JSON payload
+    data = request.json
+    uniprotID = data.get('uniprotID')
+    outputFileName = uniprotID + ".pdb"
+    outputFilePath = os.path.join(downloadLocation, outputFileName)
+    protein = pdb.parse(outputFilePath)
+    df = pdb.to_DF(protein)
+    uniprotRequestURL = f"https://www.ebi.ac.uk/proteins/api/proteins/{uniprotID}"
+    uniprotResponse = requests.get(
+        uniprotRequestURL, headers={"Accept": "application/json"}
+    )
+    if not uniprotResponse.ok:
+        uniprotResponse.raise_for_status()
+        sys.exit()
+    uniprotResponseJSON = uniprotResponse.json()
+    uniprotFeatures = uniprotResponseJSON["features"]
+    
+
+    selectedGlycans = {}
+
+    for item in uniprotFeatures:
+        if item["type"] == "CARBOHYD":
+            resname = df.loc[df['ResId'] == int(item["begin"]), 'ResName'].iloc[0]
+            key = str(int(item["begin"])) + "_A"
+            info = item["description"]
+            
+            # Check if the info matches any key in the glycan_data and get the corresponding value
+            value = default_glycan.get(info, None)
+            
+            if value:  # If value is not None, add to the selectedGlycans dictionary
+                selectedGlycans[key] = value
+
+    # Extract glycans and glycosylation_locations from selectedGlycans
+    glycans = [glycan for glycan in selectedGlycans.values() if glycan]  # Filter out empty glycans
+    glycosylation_locations = [location for location in selectedGlycans.keys()]
+
+    # Assuming you have the necessary pdb and algo modules and methods
+    protein = pdb.parse(f'{downloadLocation}{uniprotID}.pdb')
+    g, clash , box ,link_pairs, total_frames_with_data,lowest_frame= ensemble.attach(protein, glycans, glycosylation_locations)
+    now = datetime.now()
+    opath = f'{outputFileName.strip(".pdb")}_reglyco_ensemble_{now.strftime("%Y%m%d%H%M")}'
+    outputshortfilepath=opath+".pdb"
+    outputpath = f'{downloadLocation}{opath}.pdb'
+    pdb.export_multi_PDB(total_frames_with_data, protein, lowest_frame, outputpath)
+    output_sasa =f'{outputFileName.strip(".pdb")}_reglyco_sasa_{now.strftime("%Y%m%d%H%M")}.pdb'
+    output_sasa_path = f'{downloadLocation}{output_sasa}'
+    
+    ensemble.runSASA(outputpath,f'{downloadLocation}{opath}_first.xtc',f'{downloadLocation}{opath}_first.pdb',output_sasa_path)
+
+    
+    ensemble.sasa_molj(output_sasa,output_sasa_path.strip(".pdb")+".molj")
+
+    return jsonify({'output':outputshortfilepath,'output_sasa': output_sasa.strip(".pdb"), 'clash': clash, 'box': box})
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000)
+    app.run(host="0.0.0.0", port=8001)

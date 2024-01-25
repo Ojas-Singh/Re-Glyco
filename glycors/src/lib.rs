@@ -85,6 +85,11 @@ fn cross(v: &Vec<f64>, w: &Vec<f64>) -> Vec<f64> {
 }
 
 #[inline(always)]
+fn add(a: &Vec<f64>, b: &Vec<f64>) -> Vec<f64> {
+    vec![a[0] + b[0], a[1] + b[1], a[2] + b[2]]
+}
+
+#[inline(always)]
 fn subtract(a: &Vec<f64>, b: &Vec<f64>) -> Vec<f64> {
     vec![a[0] - b[0], a[1] - b[1], a[2] - b[2]]
 }
@@ -488,6 +493,87 @@ pub fn fastest_angle(p0: Vec<f64>, p1: Vec<f64>, p2: Vec<f64>) -> PyResult<f64> 
 }
 
 
+pub fn fastest_angle_rust(p0: &Vec<f64>, p1: &Vec<f64>, p2: &Vec<f64>) -> f64 {
+    let v0 = subtract(&p0, &p1);
+    let v1 = subtract(&p2, &p1);
+    let cosine_angle = dot(&v0, &v1) / (norm(&v0) * norm(&v1));
+    let angle = cosine_angle.acos();
+    angle.to_degrees()
+}
+
+#[pyfunction]
+pub fn find_steric_interactions(
+    cb: usize,
+    cg: usize,
+    nd2: usize,
+    c1: usize,
+    o5: usize,
+    o1: usize,
+    mut garr: Vec<Vec<Vec<f64>>>,
+    parr: Vec<Vec<f64>>,
+    phisd: (f64, f64),
+    psisd: (f64, f64),
+) -> PyResult<Vec<Vec<Vec<f64>>>>{
+    let mut rng = rand::thread_rng();
+    let phi_range = Uniform::new(phisd.0, phisd.1);
+    let psi_range = Uniform::new(psisd.0, psisd.1);
+
+
+    let mut results = Vec::new();
+
+    for (_index, g) in garr.iter_mut().enumerate() {
+        // Preprocessing steps
+        let o1_coord = g[o1].clone();
+        let nd2_coord = parr[nd2].clone();
+    
+        // Translate Garr by -Garr[O1]
+        for row in g.iter_mut() {
+            *row = subtract(row, &o1_coord);
+        }
+
+        // Translate Garr by +Parr[ND2]
+        for row in g.iter_mut() {
+            *row = add(row, &nd2_coord);
+        }
+    
+        // Calculate axis and angle for rotation
+        let axis = cross(&subtract(&parr[cg], &nd2_coord), &subtract(&g[c1], &nd2_coord));
+        let an = fastest_angle_rust(&parr[cg], &parr[nd2], &g[c1]);
+        let theta = (rng.gen_range(110.0..130.0) - an).to_radians();
+        
+        // Translate Garr by +Parr[ND2]
+        for row in g.iter_mut() {
+            *row = subtract(row, &nd2_coord);
+        }
+
+        // Rotate Garr
+        let rotation_matrix = rotation_matrix(&axis, theta);
+        for row in g.iter_mut() {
+            *row = matrix_multiply(&rotation_matrix, row);
+        }
+    
+        // Translate Garr back by +Parr[ND2]
+        for row in g.iter_mut() {
+            *row = add(row, &nd2_coord);
+        }
+    
+        // Check for steric interaction
+        let phi = phi_range.sample(&mut rng);
+        let psi = psi_range.sample(&mut rng);
+    
+        let mut garr_temp = g.clone();
+        rr(phi, psi, cb, cg, nd2, c1, o5, &mut garr_temp, &parr);
+        let steric_value = steric_fast(&garr_temp, &parr);
+    
+        if steric_value == 1.0 {
+            results.push(garr_temp);
+        }
+    }
+    
+    Ok(results)
+}    
+
+
 #[pymodule]
 fn glycors(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(opt))?; // Fix: Remove the '?' inside the parentheses
@@ -495,6 +581,7 @@ fn glycors(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(adjust_dihedrals))?;
     m.add_wrapped(wrap_pyfunction!(rotation_mat))?;
     m.add_wrapped(wrap_pyfunction!(fastest_angle))?;
+    m.add_wrapped(wrap_pyfunction!(find_steric_interactions))?;
     Ok(())
 }
 
