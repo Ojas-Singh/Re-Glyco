@@ -6,7 +6,8 @@ import json
 from datetime import datetime
 
 # Constants
-API_BASE_URL = "http://127.0.0.1:8000" # API URL
+API_BASE_URL = "https://glycoshape.org"  # API URL
+# API_BASE_URL = "http://127.0.0.1:8000" # API URL
 UPLOAD_ENDPOINT = "/api/upload_pdb"
 PROCESS_ENDPOINT = "/api/process_pdb"
 UPLOAD_DIR = "output"  # Local directory to save downloaded PDB files
@@ -62,12 +63,14 @@ def download_processed_pdb(file_name):
 
 def main():
     # Example usage
-    pdb_file_path = 'AF-P63279-F1-model_v4.pdb'  # Replace with actual PDB file path
+    pdb_file_path = 'AF-P29016-F1-model_v4.pdb'  # Replace with actual PDB file path
     upload_response = upload_pdb(pdb_file_path)
 
 
     glycan_configurations = {
-        '135_A': "Man(a1-3)[GlcNAc(b1-2)Man(a1-6)]Man(b1-4)GlcNAc(b1-4)GlcNAc",   # ---> residueID_residueChain :  glycanID (glycanID of choice from corresponding configurations)
+        '38_A': "Man(a1-3)[GlcNAc(b1-2)Man(a1-6)]Man(b1-4)GlcNAc(b1-4)GlcNAc",   # ---> residueID_residueChain :  glycanID (glycanID of choice from corresponding configurations)
+        '75_A': "Man(a1-3)[GlcNAc(b1-2)Man(a1-6)]Man(b1-4)GlcNAc(b1-4)GlcNAc",
+        '146_A': "Man(a1-3)[GlcNAc(b1-2)Man(a1-6)]Man(b1-4)GlcNAc(b1-4)GlcNAc",
     }
 
 
@@ -75,7 +78,10 @@ def main():
     print(f"Uploaded PDB file: {pdb_file_path}")
     process_response = process_pdb(file_id, glycan_configurations)
     output_file_name = process_response['output']
-    download_processed_pdb(output_file_name)
+    try:
+        download_processed_pdb(output_file_name)
+    except Exception as e:
+        print(f"Error downloading processed PDB file moslty running locally check temp_files for output strucutres")
     print(f"Processed PDB file downloaded: {output_file_name}")
     print(process_response['box'])
 
