@@ -11,7 +11,6 @@ glycors/Cargo.lock
 AF2_test/temp/*.pdb
 experimental
 DB
-output
 relax
 plddt
 pdb_files
