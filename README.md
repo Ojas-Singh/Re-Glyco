@@ -35,6 +35,10 @@ Modify the config.py to locate the GlycoShape Database directory.
 
 ```
 gunicorn -w 4 api:app --timeout 900
+```
+
+if you want to run on different port
+```
 gunicorn -w 4 api:app --timeout 1500 -b 127.0.0.1:8001 
 ```
 
@@ -43,6 +47,19 @@ gunicorn -w 4 api:app --timeout 1500 -b 127.0.0.1:8001
 The current version of Re-Glyco only has backend API service which can be used by [GlycoShape Website](https://glycoshape.org) code of the frontend website is [here](https://github.com/Ojas-Singh/GlycoShape).
 
 You can also use python script to access the API upload your pdb file and glycosylate it, a dummy code is provided as demo.py in this repo.
+
+
+# Demo
+Once the API is running locally at your desired port.
+change the API_BASE_URL = "https://glycoshape.org"  in demo.py to "http://127.0.0.1:8000"
+
+and run using 
+```
+python demo.py
+```
+
+produced structures can be found at output folder.
+
 
 # Citation
 

@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 
 # Constants
-API_BASE_URL = "https://glycoshape.org" #GlycoShape API URL
+API_BASE_URL = "http://127.0.0.1:8000" # API URL
 UPLOAD_ENDPOINT = "/api/upload_pdb"
 PROCESS_ENDPOINT = "/api/process_pdb"
 UPLOAD_DIR = "output"  # Local directory to save downloaded PDB files
@@ -67,8 +67,7 @@ def main():
 
 
     glycan_configurations = {
-        '135_A': "GlcNAc",   # ---> residueID_residueChain :  glycanID (glycanID of choice from corresponding configurations)
-        '2_A': "Fuc(a1-3)[Gal(b1-4)]GlcNAc(b1-3)Gal(b1-4)[Fuc(a1-3)]GlcNAc(b1-4)Glc"
+        '135_A': "Man(a1-3)[GlcNAc(b1-2)Man(a1-6)]Man(b1-4)GlcNAc(b1-4)GlcNAc",   # ---> residueID_residueChain :  glycanID (glycanID of choice from corresponding configurations)
     }
 
 

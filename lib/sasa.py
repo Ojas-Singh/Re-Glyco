@@ -8,7 +8,7 @@ AMINO_SUBSTITUTION = {'AIB': 'ALA', 'ALM': 'ALA', 'AYA': 'ALA', 'BNN': 'ALA', 'C
 
 def calc_SASA(pdbname,xtcname,index,groupname,selectgroups,outfile,outfileres,outfileatom,probe,ndots,endtime):
 
-   cmd = f"gmx sasa -f {xtcname} -s {pdbname} -n {index} -o {outfile} -or {outfileres} " \
+   cmd = f"gmx sasa -f '{xtcname}' -s '{pdbname}' -n {index} -o {outfile} -or {outfileres} " \
          f"-oa {outfileatom} -surface '{groupname}' -xvg none -probe {probe} " \
          f"-output '{selectgroups}' -ndots {ndots} -e {endtime}"
    process = subprocess.run(shlex.split(cmd), capture_output=True, text=True)
