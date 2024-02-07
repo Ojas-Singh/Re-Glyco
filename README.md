@@ -69,7 +69,8 @@ Callum M Ives and Ojas Singh et al. Restoring Protein Glycosylation with GlycoSh
 
 # Future roadmap
 - CLI interface
-- Making everything fast.
+- Density fitting
+- Fitness function with Non-bonded interaction.
 
 
 
