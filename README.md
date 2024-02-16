@@ -58,8 +58,9 @@ and run using
 python demo.py
 ```
 
-produced structures can be found at output folder.
+This will upload the [pdb](AF-P29016-F1-model_v4.pdb) to the API and will produced glycosylated structures can be found at output folder or temp_files.
 
+It can take upto 5 minute for a job.
 
 # Citation
 
